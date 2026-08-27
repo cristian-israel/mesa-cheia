@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronRight, Dices, Plus, RotateCcw, Settings2, Trophy } fr
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { GameGuideButton } from '@/components/game/GameGuideButton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Drawer,
@@ -119,6 +120,7 @@ export function CanastraScreen({ sessionId }: { sessionId: string }) {
           </p>
         </div>
         {finished ? <Badge>Fim</Badge> : null}
+        <GameGuideButton />
         <Button
           type="button"
           variant="ghost"

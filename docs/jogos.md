@@ -13,6 +13,8 @@ src/games/<id>/
   store.ts       persistência e mutações
   summary.ts     resumo para o card da Home
   GameScreen.tsx tela da partida
+  guide.md       opcional — regras em Markdown
+  assets/        opcional — imagens/arquivos do guia
 ```
 
 O bootstrap importa o barrel em `App.tsx`:
@@ -39,6 +41,11 @@ import '@/games'
 | `deleteSession` | apaga a entrada quando a sessão some na Home |
 | `summarizeSession` | placar do `SessionCard` |
 | `ScreenComponent` | recebe só `{ sessionId: string }` |
+| `guide` | opcional. `{ markdown, attachments? }`. Sem isso, não aparece o `?` em Novo jogo nem o ícone de ajuda na partida |
+
+`guide.markdown` entra com `import texto from './guide.md?raw'`. Anexos (se houver) são imports do Vite, para funcionar offline, e aparecem na aba **Anexos** do drawer — o Markdown não embute imagem. Toque na foto abre em tela cheia (`object-contain`).
+
+O botão de ajuda nas telas é `GameGuideButton` — só renderiza se o jogo tiver `guide`. O drawer é `GameGuideDrawer`.
 
 Jogos com times (Padrão, Canastra, Truco) usam `scoringSides(session)`: se há `session.teams`, cada time é um lado; senão cada jogador vira um lado de uma pessoa. Pife, Poker e Pontinhos são sempre individuais (`supportsTeams: false`).
 
@@ -107,7 +114,7 @@ A rota `/jogo/:gameId/:sessionId` **não** usa `AppShell` (sem bottom nav). A te
 Padrão visual (todos os jogos):
 
 1. Shell `relative z-10 mx-auto min-h-dvh w-full max-w-lg … pb-28 … md:max-w-4xl` (espaço pro FAB de ferramentas)
-2. Header: voltar para `/`, título do jogo, subtítulo (`Rodada N · Fulano dá as cartas` ou `Partida encerrada`), badge `Fim` se terminou, engrenagem da Mesa
+2. Header: voltar para `/`, título do jogo, subtítulo (`Rodada N · Fulano dá as cartas` ou `Partida encerrada`), badge `Fim` se terminou, ajuda (`GameGuideButton`, some se não houver guia), engrenagem da Mesa
 3. Placar em **2 colunas no mobile** quando há mais de um lado (`grid-cols-2`)
 4. Líder: `Trophy` + `border-primary bg-primary/10 ring-2 ring-primary/30`
 5. Quem já fechou o alvo: mesmo destaque, um pouco mais forte, badge `Fechou` / `Alvo` / `Fim`
@@ -127,7 +134,7 @@ Alvo na Mesa: input controlado com draft (`targetDraft`), commit no blur; inteir
 
 Passos compartilhados em `NovoJogo` — o jogo declara `supportsTeams`; o teto de gente é o mesmo para todos (2–12):
 
-1. Escolher o jogo
+1. Escolher o jogo (o `?` no card abre o guia, se o jogo tiver)
 2. Jogadores (roster em `pontos-roster`) + modo Individual/Grupos se couber
 3. Montar grupos iguais (`groupSizeOptions`: o total tem que dividir)
 4. Ordem (em grupos, `alternatePlayerOrder`)
@@ -145,3 +152,4 @@ Nomes de grupo: duas duplas viram **Nós / Eles**; senão `Dupla N`, `Trio N`, `
 6. Encerrar e reabrir a sessão pelo `sessionStore`, não por flag local
 7. Tela com o chrome acima (placar, mesa, histórico, ferramentas)
 8. UI em português, mobile-first, 2 colunas no placar
+9. Guia opcional: `guide.md` + `guide: { markdown }` no `registerGame`

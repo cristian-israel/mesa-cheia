@@ -20,6 +20,18 @@ export type SessionSummary = {
 export const GAME_MIN_PLAYERS = 2
 export const GAME_MAX_PLAYERS = 12
 
+export type GameGuideAttachment = {
+  id: string
+  label: string
+  src: string
+  kind?: 'image' | 'file'
+}
+
+export type GameGuide = {
+  markdown: string
+  attachments?: GameGuideAttachment[]
+}
+
 export interface GameDefinition<TState = unknown> {
   id: string
   label: string
@@ -33,6 +45,7 @@ export interface GameDefinition<TState = unknown> {
   deleteSession?: (sessionId: string) => void
   summarizeSession?: (session: Session) => SessionSummary
   ScreenComponent: ComponentType<{ sessionId: string }>
+  guide?: GameGuide
 }
 
 export const gameRegistry = new Map<string, GameDefinition>()

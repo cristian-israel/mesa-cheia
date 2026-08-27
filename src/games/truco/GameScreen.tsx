@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, ChevronRight, Dices, Minus, Plus, RotateCcw, Settings2, Trophy } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { GameGuideButton } from '@/components/game/GameGuideButton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Drawer,
@@ -109,6 +110,7 @@ export function TrucoScreen({ sessionId }: { sessionId: string }) {
           </p>
         </div>
         {finished ? <Badge>Fim</Badge> : null}
+        <GameGuideButton />
         <Button
           type="button"
           variant="ghost"

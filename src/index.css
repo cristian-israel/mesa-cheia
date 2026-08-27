@@ -383,3 +383,102 @@
     font-size: 16px !important;
   }
 }
+
+.game-guide {
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.game-guide > *:first-child {
+  margin-top: 0;
+}
+
+.game-guide h1,
+.game-guide h2,
+.game-guide h3 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.game-guide h1 {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 1.125rem;
+}
+
+.game-guide h2 {
+  margin: 1.25rem 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.game-guide h3 {
+  margin: 1rem 0 0.3rem;
+  font-size: 0.875rem;
+}
+
+.game-guide p,
+.game-guide ul,
+.game-guide ol {
+  margin: 0.45rem 0;
+}
+
+.game-guide ul,
+.game-guide ol {
+  padding-left: 1.15rem;
+}
+
+.game-guide ul {
+  list-style: disc;
+}
+
+.game-guide ol {
+  list-style: decimal;
+}
+
+.game-guide li + li {
+  margin-top: 0.2rem;
+}
+
+.game-guide strong {
+  font-weight: 600;
+}
+
+.game-guide a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.game-guide table {
+  width: 100%;
+  margin: 0.75rem 0;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.game-guide th,
+.game-guide td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+}
+
+.game-guide th {
+  background: var(--muted);
+  font-weight: 600;
+}
+
+.game-guide tbody tr:nth-child(even) {
+  background: color-mix(in oklab, var(--muted) 45%, transparent);
+}
+
+.game-guide code {
+  border-radius: 0.3rem;
+  background: var(--muted);
+  padding: 0.1rem 0.3rem;
+  font-size: 0.8em;
+}
+
+.game-guide hr {
+  margin: 1rem 0;
+  border-color: var(--border);
+}

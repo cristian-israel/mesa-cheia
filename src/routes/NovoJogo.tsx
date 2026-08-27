@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, User, Users } from 'lucide-react'
+import { ChevronLeft, CircleHelp, User, Users } from 'lucide-react'
 import { toast } from 'sonner'
+import { GameGuideDrawer } from '@/components/game/GameGuideDrawer'
 import { PlayerOrder } from '@/components/session/PlayerOrder'
 import { PlayerPicker } from '@/components/session/PlayerPicker'
 import { TeamBuilder } from '@/components/session/TeamBuilder'
@@ -35,6 +36,7 @@ export function NovoJogo() {
   const [teamSize, setTeamSize] = useState(2)
   const [teams, setTeams] = useState<Team[]>([])
   const [order, setOrder] = useState<Player[]>([])
+  const [guideGame, setGuideGame] = useState<GameDefinition | null>(null)
 
   const sizes = groupSizeOptions(players.length)
 
@@ -139,20 +141,36 @@ export function NovoJogo() {
           {games.map((def) => {
             const Icon = def.icon
             return (
-              <button
+              <div
                 key={def.id}
-                type="button"
-                onClick={() => pickGame(def)}
-                className="rounded-xl border bg-card/90 p-3 text-left transition-colors hover:bg-accent/40"
+                className="relative rounded-xl border bg-card/90 transition-colors hover:bg-accent/40"
               >
-                <Icon className="mb-2 size-5 text-primary" />
-                <p className="font-semibold">{def.label}</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  {def.minPlayers === def.maxPlayers
-                    ? `${def.minPlayers} jogadores`
-                    : `${def.minPlayers}–${def.maxPlayers} jogadores`}
-                </p>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => pickGame(def)}
+                  className="w-full p-3 pr-10 text-left"
+                >
+                  <Icon className="mb-2 size-5 text-primary" />
+                  <p className="font-semibold">{def.label}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {def.minPlayers === def.maxPlayers
+                      ? `${def.minPlayers} jogadores`
+                      : `${def.minPlayers}–${def.maxPlayers} jogadores`}
+                  </p>
+                </button>
+                {def.guide ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-1 right-1"
+                    aria-label={`Como jogar ${def.label}`}
+                    onClick={() => setGuideGame(def)}
+                  >
+                    <CircleHelp />
+                  </Button>
+                ) : null}
+              </div>
             )
           })}
         </div>
@@ -273,6 +291,16 @@ export function NovoJogo() {
 
       {games.length === 0 ? (
         <p className={cn('text-sm text-muted-foreground')}>Nenhum jogo registrado.</p>
+      ) : null}
+
+      {guideGame ? (
+        <GameGuideDrawer
+          game={guideGame}
+          open
+          onOpenChange={(next) => {
+            if (!next) setGuideGame(null)
+          }}
+        />
       ) : null}
     </PageContainer>
   )
