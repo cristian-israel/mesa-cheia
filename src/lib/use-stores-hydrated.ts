@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useCanastraStore } from '@/games/canastra/store'
+import { usePifeStore } from '@/games/pife/store'
 import { usePokerStore } from '@/games/poker/store'
 import { useTrucoStore } from '@/games/truco/store'
 import { useCoinStore } from '@/stores/coinStore'
@@ -12,6 +13,7 @@ function allHydrated() {
   return (
     useSessionStore.persist.hasHydrated() &&
     useCanastraStore.persist.hasHydrated() &&
+    usePifeStore.persist.hasHydrated() &&
     usePokerStore.persist.hasHydrated() &&
     useTrucoStore.persist.hasHydrated() &&
     useCoinStore.persist.hasHydrated() &&
@@ -35,6 +37,7 @@ export function useStoresHydrated() {
     const unsubs = [
       useSessionStore.persist.onFinishHydration(mark),
       useCanastraStore.persist.onFinishHydration(mark),
+      usePifeStore.persist.onFinishHydration(mark),
       usePokerStore.persist.onFinishHydration(mark),
       useTrucoStore.persist.onFinishHydration(mark),
       useCoinStore.persist.onFinishHydration(mark),

@@ -151,6 +151,7 @@ function CoinMesh({
   const spinRef = useRef<Group>(null)
   const [maps, setMaps] = useState<{ front?: Texture; back?: Texture }>({})
   const flipRef = useRef(0)
+  const idleOriginRef = useRef(0)
   const animRef = useRef<{ from: number; to: number; start: number; notified: boolean } | null>(null)
   const onRestRef = useRef(onRest)
   const mapsHold = useRef(maps)
@@ -208,6 +209,8 @@ function CoinMesh({
       if (t >= 1 && !anim.notified) {
         anim.notified = true
         animRef.current = null
+        idleOriginRef.current = time
+        group.rotation.y = flipRef.current
         group.rotation.z = 0
         group.position.y = 0
         queueMicrotask(() => onRestRef.current())
@@ -215,9 +218,10 @@ function CoinMesh({
       return
     }
 
-    group.rotation.y = flipRef.current + Math.sin(time * 0.7) * 0.16
-    group.rotation.z = Math.sin(time * 0.9) * 0.04
-    group.position.y = Math.sin(time * 1.1) * 0.02
+    const idle = time - idleOriginRef.current
+    group.rotation.y = flipRef.current + Math.sin(idle * 0.7) * 0.16
+    group.rotation.z = Math.sin(idle * 0.9) * 0.04
+    group.position.y = Math.sin(idle * 1.1) * 0.02
   })
 
   const edge = cssColor('--muted-foreground', '#a1a1aa')
