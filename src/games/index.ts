@@ -1,7 +1,6 @@
-import './canastra'
-import './padrao'
-import './pife'
-import './poker'
-import './pontinhos'
-import './truco'
-
+import "./padrao";
+import "./canastra";
+import "./pife";
+import "./pontinhos";
+import "./poker";
+import "./truco";
