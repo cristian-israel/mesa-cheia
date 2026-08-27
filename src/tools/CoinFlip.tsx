@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react'
-import { motion } from 'framer-motion'
 import { ImagePlus, Settings2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -14,131 +13,16 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { fileToCoinImage } from '@/lib/coin-image'
+import { playCoinLand, playCoinSpin } from '@/lib/coin-audio'
 import { cn } from '@/lib/utils'
 import { useCoinStore, type CoinSide } from '@/stores/coinStore'
+import { Coin3DCanvas, type CoinSpin } from '@/tools/Coin3DCanvas'
 import { COIN_PRESETS, matchingPresetId, type CoinSideId } from '@/tools/coin-presets'
-
-const SPIN_MS = 2600
-const COIN_SIZE = 160
-const COIN_DEPTH = 14
-const EDGE_SLICES = 20
-
-function landingRotation(current: number, result: 0 | 1) {
-  const spins = 8 + Math.floor(Math.random() * 5)
-  const mod = ((current % 360) + 360) % 360
-  const want = result * 180
-  const extra = (want - mod + 360) % 360
-  return current + spins * 360 + extra
-}
 
 function sideCaption(side: CoinSide, id: CoinSideId) {
   const label = side.label.trim()
   if (label) return label
   return id === 'a' ? 'Lado A' : 'Lado B'
-}
-
-function CoinFace({ side, flipped }: { side: CoinSide; flipped?: boolean }) {
-  const label = side.label.trim()
-  const depth = COIN_DEPTH / 2
-  return (
-    <div
-      className={cn(
-        'absolute inset-0 overflow-hidden rounded-full',
-        flipped ? 'bg-muted text-foreground' : 'bg-card text-foreground',
-      )}
-      style={{
-        backfaceVisibility: 'hidden',
-        WebkitBackfaceVisibility: 'hidden',
-        transform: `rotateY(${flipped ? 180 : 0}deg) translateZ(${depth}px)`,
-        boxShadow: 'inset 0 0 0 2px color-mix(in oklch, var(--foreground) 14%, transparent)',
-      }}
-    >
-      {side.image ? (
-        <img src={side.image} alt="" className="size-full object-cover" />
-      ) : (
-        <div className="absolute inset-0 grid place-items-center px-4 text-center">
-          <span className="line-clamp-2 text-sm font-medium tracking-wide">
-            {label || (flipped ? 'B' : 'A')}
-          </span>
-        </div>
-      )}
-      <span
-        className="pointer-events-none absolute inset-0 rounded-full"
-        style={{
-          background:
-            'radial-gradient(circle at 32% 28%, oklch(1 0 0 / 22%), transparent 52%)',
-        }}
-      />
-      {side.image ? (
-        <span className="sr-only">{label || (flipped ? 'Lado B' : 'Lado A')}</span>
-      ) : null}
-    </div>
-  )
-}
-
-function Coin3D({
-  a,
-  b,
-  rotation,
-  busy,
-  onToss,
-  onRest,
-}: {
-  a: CoinSide
-  b: CoinSide
-  rotation: number
-  busy: boolean
-  onToss: () => void
-  onRest: () => void
-}) {
-  const radius = COIN_SIZE / 2
-  return (
-    <div className="relative pb-3" style={{ width: COIN_SIZE, height: COIN_SIZE }}>
-      <div
-        className="pointer-events-none absolute inset-x-6 -bottom-2 h-4 rounded-[100%] bg-foreground/20 blur-md"
-        aria-hidden
-      />
-      <div
-        className="perspective-[900px]"
-        style={{ width: COIN_SIZE, height: COIN_SIZE }}
-      >
-        <div
-          className="size-full"
-          style={{ transform: 'rotateX(-18deg)', transformStyle: 'preserve-3d' }}
-        >
-          <motion.button
-            type="button"
-            aria-label="Girar moeda"
-            disabled={busy}
-            onClick={onToss}
-            animate={{ rotateY: rotation }}
-            transition={{ duration: SPIN_MS / 1000, ease: [0.12, 0.78, 0.08, 1] }}
-            onAnimationComplete={onRest}
-            className="relative size-full"
-            style={{ transformStyle: 'preserve-3d' }}
-          >
-            {Array.from({ length: EDGE_SLICES }, (_, index) => (
-              <span
-                key={index}
-                className="pointer-events-none absolute top-0"
-                style={{
-                  left: '50%',
-                  width: COIN_DEPTH,
-                  height: COIN_SIZE,
-                  marginLeft: -COIN_DEPTH / 2,
-                  background:
-                    'linear-gradient(to right, color-mix(in oklch, var(--foreground) 22%, var(--background)), color-mix(in oklch, var(--foreground) 8%, var(--background)), color-mix(in oklch, var(--foreground) 26%, var(--background)))',
-                  transform: `rotateY(${(360 / EDGE_SLICES) * index}deg) translateZ(${radius}px)`,
-                }}
-              />
-            ))}
-            <CoinFace side={a} />
-            <CoinFace side={b} flipped />
-          </motion.button>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 function SideEditor({
@@ -233,10 +117,10 @@ export function CoinFlip() {
   const presetId = useCoinStore((s) => s.presetId)
   const applyPreset = useCoinStore((s) => s.applyPreset)
   const custom = presetId === 'custom' || Boolean(a.image || b.image) || !matchingPresetId(a.label, b.label)
-  const [rotation, setRotation] = useState(0)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<CoinSideId | undefined>(undefined)
   const [customizeOpen, setCustomizeOpen] = useState(false)
+  const [spin, setSpin] = useState<CoinSpin | undefined>(undefined)
   const pending = useRef<CoinSideId | undefined>(undefined)
 
   function toss() {
@@ -244,7 +128,8 @@ export function CoinFlip() {
     const next: CoinSideId = Math.random() < 0.5 ? 'a' : 'b'
     pending.current = next
     setBusy(true)
-    setRotation((current) => landingRotation(current, next === 'a' ? 0 : 1))
+    setSpin({ id: Date.now(), face: next === 'a' ? 0 : 1 })
+    void playCoinSpin()
   }
 
   function handleRest() {
@@ -254,13 +139,14 @@ export function CoinFlip() {
     const side = next === 'a' ? a : b
     setResult(next)
     setBusy(false)
+    void playCoinLand()
     toast.success(`Deu ${sideCaption(side, next)}!`)
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col items-center gap-3 py-2">
-        <Coin3D a={a} b={b} rotation={rotation} busy={busy} onToss={toss} onRest={handleRest} />
+        <Coin3DCanvas a={a} b={b} spin={spin} busy={busy} onToss={toss} onRest={handleRest} />
         <p className="min-h-5 text-sm font-medium">
           {busy
             ? 'Girando…'
