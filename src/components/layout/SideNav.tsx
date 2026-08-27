@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { Dices, PanelLeftClose, PanelLeftOpen, Plus, Settings, Spade } from 'lucide-react'
+import { AppFooter } from '@/components/layout/AppFooter'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useUiStore } from '@/stores/uiStore'
@@ -60,6 +61,7 @@ export function SideNav() {
           </NavLink>
         ))}
       </nav>
+      <AppFooter compact collapsed={collapsed} className="mt-auto px-2.5" />
     </aside>
   )
 }

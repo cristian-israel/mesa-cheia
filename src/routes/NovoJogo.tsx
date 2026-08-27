@@ -124,7 +124,10 @@ export function NovoJogo() {
           <p className="text-xs text-muted-foreground">
             {step === 'game' && 'Escolha o que vai rolar na mesa.'}
             {step === 'players' &&
-              'Pelo menos 2 pessoas. Escolha se é individual ou em grupo.'}
+              game &&
+              (game.supportsTeams
+                ? 'Pelo menos 2 pessoas. Escolha se é individual ou em grupo.'
+                : `Escolha de ${game.minPlayers} a ${game.maxPlayers} jogadores.`)}
             {step === 'teams' && 'Monte os grupos.'}
             {step === 'order' && 'Ordem dos jogadores.'}
           </p>

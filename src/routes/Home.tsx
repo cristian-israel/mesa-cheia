@@ -29,7 +29,7 @@ export function Home() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Crie uma partida de Canastra para começar a marcar pontos.
+              Crie uma partida de Canastra ou Poker para começar a marcar.
             </p>
             <Button asChild>
               <Link to="/novo">

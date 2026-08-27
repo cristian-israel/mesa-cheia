@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { AppFooter } from '@/components/layout/AppFooter'
 import { cn } from '@/lib/utils'
 
 export function PageContainer({
@@ -16,6 +17,7 @@ export function PageContainer({
       )}
     >
       {children}
+      <AppFooter />
     </div>
   )
 }

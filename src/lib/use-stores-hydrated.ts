@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useCanastraStore } from '@/games/canastra/store'
+import { usePokerStore } from '@/games/poker/store'
 import { useRosterStore } from '@/stores/rosterStore'
 import { useSessionStore } from '@/stores/sessionStore'
 import { useThemeStore } from '@/stores/themeStore'
@@ -9,6 +10,7 @@ function allHydrated() {
   return (
     useSessionStore.persist.hasHydrated() &&
     useCanastraStore.persist.hasHydrated() &&
+    usePokerStore.persist.hasHydrated() &&
     useRosterStore.persist.hasHydrated() &&
     useThemeStore.persist.hasHydrated() &&
     useUiStore.persist.hasHydrated()
@@ -29,6 +31,7 @@ export function useStoresHydrated() {
     const unsubs = [
       useSessionStore.persist.onFinishHydration(mark),
       useCanastraStore.persist.onFinishHydration(mark),
+      usePokerStore.persist.onFinishHydration(mark),
       useRosterStore.persist.onFinishHydration(mark),
       useThemeStore.persist.onFinishHydration(mark),
       useUiStore.persist.onFinishHydration(mark),

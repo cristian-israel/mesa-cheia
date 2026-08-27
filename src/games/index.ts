@@ -1,1 +1,3 @@
 import './canastra'
+import './poker'
+
