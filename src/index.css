@@ -344,6 +344,8 @@
 
   html {
     @apply antialiased;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
@@ -356,5 +358,28 @@
 
   #root {
     @apply min-h-dvh;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  label,
+  summary,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+}
+
+/* iOS Safari zooms focused fields under 16px and often keeps that scale after the
+   keyboard or picker closes. Unlayered so it wins over text-sm utilities. */
+@supports (-webkit-touch-callout: none) {
+  input:not([type='checkbox']):not([type='radio']):not([type='hidden']):not([type='range']):not(
+      [type='file']
+    ):not([type='button']):not([type='submit']):not([type='reset']),
+  select,
+  textarea {
+    font-size: 16px !important;
   }
 }
