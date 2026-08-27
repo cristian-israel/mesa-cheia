@@ -101,33 +101,35 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
         </Button>
       </header>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className={cn('grid gap-3', session.players.length > 1 && 'grid-cols-2')}>
         {session.players.map((player) => {
           const mesas = won[player.id] ?? 0
           const out = isEliminated(state, player.id)
-          const leading = !out && maxMesas > 0 && mesas === maxMesas && Object.values(won).some((n) => n < maxMesas)
+          const leading =
+            !out && maxMesas > 0 && mesas === maxMesas && Object.values(won).some((n) => n < maxMesas)
           const lastOne = lastStanding && aliveIds.length === 1 && aliveIds[0] === player.id
+          const ahead = leading || lastOne
           return (
             <Card
               key={player.id}
               className={cn(
                 'bg-card/90',
                 out && 'opacity-60',
-                (leading || lastOne) && 'ring-2 ring-primary/30',
+                ahead && 'border-primary bg-primary/10 ring-2 ring-primary/30',
               )}
             >
               <CardHeader className="pb-2">
-                <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="flex items-center gap-1.5">
-                    {leading || lastOne ? <Trophy className="size-4 text-primary" /> : null}
-                    {player.name}
+                <div className="flex items-start justify-between gap-1">
+                  <CardTitle className="flex min-w-0 items-center gap-1.5">
+                    {ahead ? <Trophy className="size-4 shrink-0 text-primary" /> : null}
+                    <span className="truncate">{player.name}</span>
                   </CardTitle>
                   {out ? <Badge variant="secondary">Saiu</Badge> : null}
                   {lastOne && finished ? <Badge>Levou tudo</Badge> : null}
                   {!lastStanding && mesas >= state.targetMesas ? <Badge>Alvo</Badge> : null}
                 </div>
               </CardHeader>
-              <CardContent className="flex items-end justify-between gap-2">
+              <CardContent className="space-y-2">
                 <div>
                   <p className="text-3xl font-bold tabular-nums">{mesas}</p>
                   <p className="text-[11px] text-muted-foreground">
@@ -139,6 +141,7 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="w-full"
                     disabled={aliveIds.length <= 1 && !out}
                     onClick={() => toggleEliminated(sessionId, player.id)}
                   >

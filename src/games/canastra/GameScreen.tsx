@@ -72,6 +72,9 @@ export function CanastraScreen({ sessionId }: { sessionId: string }) {
   const buracoOn = state.buracoEnabled ?? true
   const meta = buracoThreshold(state)
   const dealer = session.players.find((p) => p.id === state.dealerPlayerId)
+  const scoreValues = sides.map((side) => totals[side.id] ?? 0)
+  const maxScore = Math.max(0, ...scoreValues)
+  const scoresTied = scoreValues.length > 1 && scoreValues.every((score) => score === maxScore)
 
   function handleRegister() {
     if (sides.length === 0) return
@@ -127,7 +130,7 @@ export function CanastraScreen({ sessionId }: { sessionId: string }) {
         </Button>
       </header>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className={cn('grid gap-3', sides.length > 1 && 'grid-cols-2')}>
         {sides.map((team) => {
           const members = team.playerIds
             .map((id) => session.players.find((p) => p.id === id)?.name)
@@ -136,21 +139,26 @@ export function CanastraScreen({ sessionId }: { sessionId: string }) {
           const total = totals[team.id] ?? 0
           const closed = total >= state.targetScore
           const inBuraco = !closed && isNoBuraco(state, total)
+          const leading = !closed && maxScore > 0 && !scoresTied && total === maxScore
           return (
             <Card
               key={team.id}
               className={cn(
                 'bg-card/90',
                 inBuraco && 'ring-2 ring-primary/25',
-                closed && 'ring-2 ring-primary/50',
+                leading && 'border-primary bg-primary/10 ring-2 ring-primary/30',
+                closed && 'border-primary bg-primary/10 ring-2 ring-primary/50',
               )}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <CardTitle>{team.name}</CardTitle>
+                  <div className="min-w-0">
+                    <CardTitle className="flex items-center gap-1.5">
+                      {leading || closed ? <Trophy className="size-4 shrink-0 text-primary" /> : null}
+                      <span className="truncate">{team.name}</span>
+                    </CardTitle>
                     {team.playerIds.length > 1 ? (
-                      <p className="mt-1 text-xs text-muted-foreground">{members}</p>
+                      <p className="mt-1 truncate text-xs text-muted-foreground">{members}</p>
                     ) : null}
                   </div>
                   {closed ? <Badge>Fechou</Badge> : null}
@@ -172,7 +180,7 @@ export function CanastraScreen({ sessionId }: { sessionId: string }) {
         </Button>
         <Button type="button" disabled={finished} onClick={() => setRoundOpen(true)}>
           <Plus />
-          Nova rodada
+          Registrar rodada
         </Button>
       </div>
 
@@ -341,7 +349,7 @@ export function CanastraScreen({ sessionId }: { sessionId: string }) {
       <Drawer open={roundOpen} onOpenChange={setRoundOpen}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Nova rodada</DrawerTitle>
+            <DrawerTitle>Registrar rodada</DrawerTitle>
             <DrawerDescription>Lance os pontos desta mão.</DrawerDescription>
           </DrawerHeader>
           <div className="min-h-0 space-y-3 overflow-y-auto px-4 pb-2">

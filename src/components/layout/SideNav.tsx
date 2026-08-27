@@ -61,7 +61,7 @@ export function SideNav() {
           </NavLink>
         ))}
       </nav>
-      <AppFooter compact collapsed={collapsed} className="mt-auto px-2.5" />
+      <AppFooter compact collapsed={collapsed} className="mt-4 px-2.5" />
     </aside>
   )
 }

@@ -5,9 +5,11 @@ import { cn } from '@/lib/utils'
 export function PageContainer({
   children,
   className,
+  footer = true,
 }: {
   children: ReactNode
   className?: string
+  footer?: boolean
 }) {
   return (
     <div
@@ -17,7 +19,7 @@ export function PageContainer({
       )}
     >
       {children}
-      <AppFooter />
+      {footer ? <AppFooter /> : null}
     </div>
   )
 }

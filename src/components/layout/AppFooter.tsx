@@ -23,7 +23,7 @@ export function AppFooter({
         aria-label={`GitHub de ${AUTHOR}`}
         title={`${AUTHOR} no GitHub`}
         className={cn(
-          'mt-auto flex justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground',
+          'flex justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground',
           className,
         )}
       >
@@ -36,7 +36,7 @@ export function AppFooter({
     <footer
       className={cn(
         'shrink-0 text-[11px] leading-relaxed text-muted-foreground',
-        compact ? 'pt-4 text-[10px]' : 'mt-auto pt-8 text-center',
+        compact ? 'pt-4 text-[10px]' : 'mt-8 text-center',
         className,
       )}
     >
