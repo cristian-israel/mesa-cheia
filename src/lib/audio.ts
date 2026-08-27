@@ -61,6 +61,29 @@ export function whoosh(ctx: AudioContext, time: number, duration: number, gain =
   source.stop(time + duration)
 }
 
+export function noiseBurst(ctx: AudioContext, time: number, duration: number, gain: number) {
+  const length = Math.floor(ctx.sampleRate * duration)
+  const buffer = ctx.createBuffer(1, length, ctx.sampleRate)
+  const data = buffer.getChannelData(0)
+  for (let i = 0; i < length; i += 1) {
+    data[i] = (Math.random() * 2 - 1) * (1 - i / length)
+  }
+  const source = ctx.createBufferSource()
+  const filter = ctx.createBiquadFilter()
+  const amp = ctx.createGain()
+  source.buffer = buffer
+  filter.type = 'lowpass'
+  filter.frequency.setValueAtTime(2800, time)
+  filter.frequency.exponentialRampToValueAtTime(180, time + duration)
+  amp.gain.setValueAtTime(gain, time)
+  amp.gain.exponentialRampToValueAtTime(0.0008, time + duration)
+  source.connect(filter)
+  filter.connect(amp)
+  amp.connect(ctx.destination)
+  source.start(time)
+  source.stop(time + duration)
+}
+
 export function tick(ctx: AudioContext, time: number, gain: number) {
   const osc = ctx.createOscillator()
   const amp = ctx.createGain()

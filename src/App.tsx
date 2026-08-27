@@ -4,7 +4,7 @@ import { Toaster } from 'sonner'
 import { AppShell } from '@/components/layout/AppShell'
 import { WallpaperBackdrop } from '@/components/theme/WallpaperBackdrop'
 import { Configuracoes } from '@/routes/Configuracoes'
-import { DadosPage, Ferramentas, MoedaPage, RoletaPage } from '@/routes/Ferramentas'
+import { DadosPage, Ferramentas, MoedaPage, RoletaPage, RoletaRussaPage } from '@/routes/Ferramentas'
 import { Home } from '@/routes/Home'
 import { Jogo } from '@/routes/Jogo'
 import { NovoJogo } from '@/routes/NovoJogo'
@@ -46,6 +46,7 @@ export default function App() {
           <Route path="/ferramentas" element={<Ferramentas />} />
           <Route path="/ferramentas/moeda" element={<MoedaPage />} />
           <Route path="/ferramentas/roleta" element={<RoletaPage />} />
+          <Route path="/ferramentas/roleta-russa" element={<RoletaRussaPage />} />
           <Route path="/ferramentas/dados" element={<DadosPage />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
         </Route>

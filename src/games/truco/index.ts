@@ -9,8 +9,6 @@ registerGame({
   id: 'truco',
   label: 'Truco gaúcho',
   icon: Swords,
-  minPlayers: 2,
-  maxPlayers: 6,
   supportsTeams: true,
   schema: TrucoStateSchema,
   createInitialState: (sessionId, players, teams) =>

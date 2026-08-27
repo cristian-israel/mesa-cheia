@@ -2,7 +2,7 @@
 
 Cada jogo é um plugin. A sessão (quem joga, grupos, status) vive no store global; pontos, dealer e regras ficam no store do jogo. Não há backend: tudo é `localStorage` via Zustand persist.
 
-Hoje: Canastra, Pife, Poker e Truco gaúcho. O que se repete entre eles é o padrão. O que muda é só a regra da mesa.
+Hoje: Padrão, Canastra, Pife, Poker, Pontinhos e Truco gaúcho. O que se repete entre eles é o padrão. O que muda é só a regra da mesa.
 
 ## Anatomia
 
@@ -29,10 +29,10 @@ import '@/games'
 
 | Campo | Papel |
 | --- | --- |
-| `id` | slug estável (`canastra`, `pife`, `poker`, `truco`). Entra na URL e em `Session.gameId` |
+| `id` | slug estável (`padrao`, `canastra`, `pife`, `poker`, `pontinhos`, `truco`). Entra na URL e em `Session.gameId` |
 | `label` | nome na UI, em português |
 | `icon` | Lucide |
-| `minPlayers` / `maxPlayers` | validação no fluxo de Novo jogo |
+| `minPlayers` / `maxPlayers` | opcionais; padrão **2–12** (`GAME_MIN_PLAYERS` / `GAME_MAX_PLAYERS`) |
 | `supportsTeams` | se `true`, Novo jogo oferece Individual vs Grupos |
 | `schema` | Zod do estado da partida |
 | `createInitialState` | cria a entrada no store do jogo |
@@ -40,7 +40,7 @@ import '@/games'
 | `summarizeSession` | placar do `SessionCard` |
 | `ScreenComponent` | recebe só `{ sessionId: string }` |
 
-Jogos com times (Canastra, Truco) usam `scoringSides(session)`: se há `session.teams`, cada time é um lado; senão cada jogador vira um lado de uma pessoa. Pife e Poker são sempre individuais (`supportsTeams: false`).
+Jogos com times (Padrão, Canastra, Truco) usam `scoringSides(session)`: se há `session.teams`, cada time é um lado; senão cada jogador vira um lado de uma pessoa. Pife, Poker e Pontinhos são sempre individuais (`supportsTeams: false`).
 
 ## Sessão vs estado do jogo
 
@@ -125,7 +125,7 @@ Alvo na Mesa: input controlado com draft (`targetDraft`), commit no blur; inteir
 
 ## Novo jogo
 
-Passos compartilhados em `NovoJogo` — o jogo só declara limites e `supportsTeams`:
+Passos compartilhados em `NovoJogo` — o jogo declara `supportsTeams`; o teto de gente é o mesmo para todos (2–12):
 
 1. Escolher o jogo
 2. Jogadores (roster em `pontos-roster`) + modo Individual/Grupos se couber

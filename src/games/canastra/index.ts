@@ -9,8 +9,6 @@ registerGame({
   id: 'canastra',
   label: 'Canastra',
   icon: Layers,
-  minPlayers: 2,
-  maxPlayers: 8,
   supportsTeams: true,
   schema: CanastraStateSchema,
   createInitialState: (sessionId, players, teams) =>

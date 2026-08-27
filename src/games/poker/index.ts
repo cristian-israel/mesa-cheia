@@ -9,8 +9,6 @@ registerGame({
   id: 'poker',
   label: 'Poker',
   icon: Club,
-  minPlayers: 2,
-  maxPlayers: 10,
   supportsTeams: false,
   schema: PokerStateSchema,
   createInitialState: (sessionId, players, teams) =>

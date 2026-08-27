@@ -29,7 +29,7 @@ export function Home() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Crie uma partida de Canastra, Pife, Poker ou Truco para começar a marcar.
+              Crie uma partida para começar a marcar.
             </p>
             <Button asChild>
               <Link to="/novo">

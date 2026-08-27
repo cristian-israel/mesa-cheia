@@ -9,8 +9,6 @@ registerGame({
   id: 'pife',
   label: 'Pife',
   icon: Grid3x3,
-  minPlayers: 2,
-  maxPlayers: 6,
   supportsTeams: false,
   schema: PifeStateSchema,
   createInitialState: (sessionId, players, teams) =>

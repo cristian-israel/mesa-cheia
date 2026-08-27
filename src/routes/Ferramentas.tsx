@@ -1,16 +1,18 @@
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Coins, Dices, RotateCw } from 'lucide-react'
+import { ArrowLeft, Coins, Crosshair, Dices, RotateCw } from 'lucide-react'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CoinFlip } from '@/tools/CoinFlip'
 import { DiceRoller } from '@/tools/DiceRoller'
 import { Roulette } from '@/tools/Roulette'
+import { RussianRoulette } from '@/tools/RussianRoulette'
 
 const tools = [
   { to: '/ferramentas/moeda', label: 'Cara ou coroa', hint: 'Sorteio binário', icon: Coins },
   { to: '/ferramentas/roleta', label: 'Roleta', hint: 'Lista de nomes ou itens', icon: RotateCw },
+  { to: '/ferramentas/roleta-russa', label: 'Roleta russa', hint: 'Seis câmaras e uma pistola', icon: Crosshair },
   { to: '/ferramentas/dados', label: 'Dados', hint: 'Qualquer número de lados', icon: Dices },
 ]
 
@@ -23,7 +25,7 @@ export function Ferramentas() {
           Usáveis soltas ou no meio de uma partida.
         </p>
       </header>
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {tools.map(({ to, label, hint, icon: Icon }) => (
           <Link
             key={to}
@@ -78,6 +80,14 @@ export function RoletaPage() {
   return (
     <ToolPage title="Roleta">
       <Roulette items={[]} allowEdit />
+    </ToolPage>
+  )
+}
+
+export function RoletaRussaPage() {
+  return (
+    <ToolPage title="Roleta russa">
+      <RussianRoulette />
     </ToolPage>
   )
 }

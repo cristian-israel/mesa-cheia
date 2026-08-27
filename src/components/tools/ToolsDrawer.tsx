@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Coins, Dices, RotateCw } from 'lucide-react'
+import { Coins, Crosshair, Dices, RotateCw } from 'lucide-react'
 import {
   Drawer,
   DrawerContent,
@@ -10,8 +10,9 @@ import {
 import { CoinFlip } from '@/tools/CoinFlip'
 import { DiceRoller } from '@/tools/DiceRoller'
 import { Roulette } from '@/tools/Roulette'
+import { RussianRoulette } from '@/tools/RussianRoulette'
 
-type ToolId = 'menu' | 'moeda' | 'roleta' | 'dados'
+type ToolId = 'menu' | 'moeda' | 'roleta' | 'russa' | 'dados'
 
 type ToolsDrawerProps = {
   open: boolean
@@ -22,6 +23,7 @@ type ToolsDrawerProps = {
 const options = [
   { id: 'moeda' as const, label: 'Cara ou coroa', icon: Coins },
   { id: 'roleta' as const, label: 'Roleta', icon: RotateCw },
+  { id: 'russa' as const, label: 'Roleta russa', icon: Crosshair },
   { id: 'dados' as const, label: 'Dados', icon: Dices },
 ]
 
@@ -41,6 +43,7 @@ export function ToolsDrawer({ open, onOpenChange, items = [] }: ToolsDrawerProps
             {tool === 'menu' && 'Ferramentas'}
             {tool === 'moeda' && 'Cara ou coroa'}
             {tool === 'roleta' && 'Roleta'}
+            {tool === 'russa' && 'Roleta russa'}
             {tool === 'dados' && 'Dados'}
           </DrawerTitle>
           <DrawerDescription>
@@ -77,6 +80,7 @@ export function ToolsDrawer({ open, onOpenChange, items = [] }: ToolsDrawerProps
               {tool === 'roleta' ? (
                 <Roulette items={items} allowEdit={items.length === 0} />
               ) : null}
+              {tool === 'russa' ? <RussianRoulette /> : null}
               {tool === 'dados' ? <DiceRoller /> : null}
             </div>
           )}

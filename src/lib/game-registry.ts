@@ -17,6 +17,9 @@ export type SessionSummary = {
   sides: SideSummary[]
 }
 
+export const GAME_MIN_PLAYERS = 2
+export const GAME_MAX_PLAYERS = 12
+
 export interface GameDefinition<TState = unknown> {
   id: string
   label: string
@@ -34,8 +37,17 @@ export interface GameDefinition<TState = unknown> {
 
 export const gameRegistry = new Map<string, GameDefinition>()
 
-export function registerGame(def: GameDefinition) {
-  gameRegistry.set(def.id, def)
+export function registerGame(
+  def: Omit<GameDefinition, 'minPlayers' | 'maxPlayers'> & {
+    minPlayers?: number
+    maxPlayers?: number
+  },
+) {
+  gameRegistry.set(def.id, {
+    ...def,
+    minPlayers: def.minPlayers ?? GAME_MIN_PLAYERS,
+    maxPlayers: def.maxPlayers ?? GAME_MAX_PLAYERS,
+  })
 }
 
 export function listGames(): GameDefinition[] {
