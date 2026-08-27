@@ -8,6 +8,7 @@ import { DadosPage, Ferramentas, MoedaPage, RoletaPage, RoletaRussaPage } from '
 import { Home } from '@/routes/Home'
 import { Jogo } from '@/routes/Jogo'
 import { NovoJogo } from '@/routes/NovoJogo'
+import { Ranking } from '@/routes/Ranking'
 import { useStoresHydrated } from '@/lib/use-stores-hydrated'
 import { useThemeStore } from '@/stores/themeStore'
 import '@/games'
@@ -42,6 +43,7 @@ export default function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<Home />} />
+          <Route path="/ranking" element={<Ranking />} />
           <Route path="/novo" element={<NovoJogo />} />
           <Route path="/ferramentas" element={<Ferramentas />} />
           <Route path="/ferramentas/moeda" element={<MoedaPage />} />
