@@ -1,4 +1,4 @@
-import { Dices, Plus, Settings, Spade, Trophy, type LucideIcon } from 'lucide-react'
+import { Dices, Palette, Plus, Spade, Trophy, type LucideIcon } from 'lucide-react'
 
 export type NavItem = {
   to: string
@@ -13,5 +13,5 @@ export const navLinks: NavItem[] = [
   { to: '/ranking', label: 'Ranking', icon: Trophy, end: false },
   { to: '/novo', label: 'Novo jogo', short: 'Novo', icon: Plus, end: false },
   { to: '/ferramentas', label: 'Ferramentas', icon: Dices, end: false },
-  { to: '/configuracoes', label: 'Ajustes', icon: Settings, end: false },
+  { to: '/preferencias', label: 'Preferências', short: 'Prefer.', icon: Palette, end: false },
 ]

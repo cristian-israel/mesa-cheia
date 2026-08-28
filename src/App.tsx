@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { AppShell } from '@/components/layout/AppShell'
 import { WallpaperBackdrop } from '@/components/theme/WallpaperBackdrop'
-import { Configuracoes } from '@/routes/Configuracoes'
+import { Preferencias } from '@/routes/Preferencias'
 import { DadosPage, Ferramentas, MoedaPage, RoletaPage, RoletaRussaPage } from '@/routes/Ferramentas'
 import { Home } from '@/routes/Home'
 import { Jogo } from '@/routes/Jogo'
@@ -50,7 +50,8 @@ export default function App() {
           <Route path="/ferramentas/roleta" element={<RoletaPage />} />
           <Route path="/ferramentas/roleta-russa" element={<RoletaRussaPage />} />
           <Route path="/ferramentas/dados" element={<DadosPage />} />
-          <Route path="/configuracoes" element={<Configuracoes />} />
+          <Route path="/preferencias" element={<Preferencias />} />
+          <Route path="/configuracoes" element={<Navigate to="/preferencias" replace />} />
         </Route>
         <Route path="/jogo/:gameId/:sessionId" element={<Jogo />} />
         <Route path="*" element={<Navigate to="/" replace />} />

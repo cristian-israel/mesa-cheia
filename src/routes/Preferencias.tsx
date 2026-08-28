@@ -5,16 +5,16 @@ import { ThemePicker } from '@/components/theme/ThemePicker'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 
-export function Configuracoes() {
+export function Preferencias() {
   return (
     <PageContainer
       footer={false}
       className="h-dvh overflow-hidden pb-24 md:h-auto md:overflow-visible md:pb-8"
     >
       <header className="mb-3 shrink-0">
-        <h1 className="text-xl font-bold tracking-tight">Configurações</h1>
+        <h1 className="text-xl font-bold tracking-tight">Preferências</h1>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Tema, papel de parede e tipografia. Preferências ficam neste aparelho.
+          Tema, papel de parede e tipografia. Ficam neste aparelho.
         </p>
       </header>
 
