@@ -103,7 +103,9 @@ Defaults nomeados no schema (`CANASTRA_DEFAULT_TARGET`, `TRUCO_DEFAULT_TARGET`, 
 - `modeLabel`: `Individual`, `Duplas`, `Trios`, …
 - `sides[]`: `id`, `name`, `members`, `score?`, `leader?`
 
-Líder: maior pontuação, só se não estiver tudo empatado e o máximo for `> 0`. Empate = ninguém com `leader`. O card destaca com troféu + `bg-primary/10`.
+Líder: em geral a **maior** pontuação, só se não estiver tudo empatado e o máximo for `> 0`. Empate = ninguém com `leader`. O card destaca com troféu + `bg-primary/10`.
+
+**Exceção — Pontinhos:** placar invertido. Líder = **menor** pontuação entre quem ainda não atingiu o alvo. Quem chega no alvo perde (`Estourou`); a partida encerra igual aos outros jogos.
 
 Se o jogo não implementar summary, o card cai no fallback (lados sem score).
 
@@ -117,7 +119,7 @@ Padrão visual (todos os jogos):
 2. Header: voltar para `/`, título do jogo, subtítulo (`Rodada N · Fulano dá as cartas` ou `Partida encerrada`), badge `Fim` se terminou, ajuda (`GameGuideButton`, some se não houver guia), engrenagem da Mesa
 3. Placar em **2 colunas no mobile** quando há mais de um lado (`grid-cols-2`)
 4. Líder: `Trophy` + `border-primary bg-primary/10 ring-2 ring-primary/30`
-5. Quem já fechou o alvo: mesmo destaque, um pouco mais forte, badge `Fechou` / `Alvo` / `Fim`
+5. Quem já fechou o alvo: mesmo destaque, um pouco mais forte, badge `Fechou` / `Alvo` / `Fim` — **exceto Pontinhos**, onde atingir o alvo é derrota (`Estourou`, tom destrutivo) e o troféu fica com a menor pontuação
 6. Ações: botão Mesa + ação principal (`Registrar rodada`, lançar mão, etc.)
 7. Histórico desfazível
 8. Drawer **Mesa**: dealer (select + Próximo), alvo, opções da regra

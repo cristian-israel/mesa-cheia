@@ -4,6 +4,7 @@ import { PontinhosScreen } from '@/games/pontinhos/GameScreen'
 import { PontinhosStateSchema } from '@/games/pontinhos/schema'
 import { usePontinhosStore } from '@/games/pontinhos/store'
 import { summarizePontinhos } from '@/games/pontinhos/summary'
+import guide from '@/games/pontinhos/guide.md?raw'
 
 registerGame({
   id: 'pontinhos',
@@ -16,4 +17,5 @@ registerGame({
   deleteSession: (sessionId) => usePontinhosStore.getState().deleteSession(sessionId),
   summarizeSession: summarizePontinhos,
   ScreenComponent: PontinhosScreen,
+  guide: { markdown: guide },
 })

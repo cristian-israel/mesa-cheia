@@ -17,7 +17,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ToolsDrawer } from '@/components/tools/ToolsDrawer'
-import { PONTINHOS_TARGETS, playerTotals, roundLeaders } from '@/games/pontinhos/schema'
+import {
+  PONTINHOS_TARGETS,
+  isBusted,
+  playerTotals,
+  roundLeaders,
+  scoreLeaders,
+} from '@/games/pontinhos/schema'
 import { usePontinhosStore } from '@/games/pontinhos/store'
 import { formatDuration, formatWhen, sessionDurationMs } from '@/lib/time'
 import { cn } from '@/lib/utils'
@@ -59,9 +65,7 @@ export function PontinhosScreen({ sessionId }: { sessionId: string }) {
   const roundNumber = state.rounds.length + 1
   const playerNames = session.players.map((p) => p.name)
   const playerIds = session.players.map((p) => p.id)
-  const scoreValues = session.players.map((player) => totals[player.id] ?? 0)
-  const maxScore = Math.max(0, ...scoreValues)
-  const scoresTied = scoreValues.length > 1 && scoreValues.every((score) => score === maxScore)
+  const leaders = scoreLeaders(state, playerIds)
   const recent = [...state.rounds].reverse()
 
   function openRound() {
@@ -109,7 +113,7 @@ export function PontinhosScreen({ sessionId }: { sessionId: string }) {
           <p className="truncate text-xs text-muted-foreground">
             {finished
               ? 'Partida encerrada'
-              : `Até ${formatPoints(state.targetScore)} · ${dealer?.name ?? '—'} dá as cartas`}
+              : `Menor pontuação · alvo ${formatPoints(state.targetScore)} · ${dealer?.name ?? '—'} dá as cartas`}
           </p>
         </div>
         {finished ? <Badge>Fim</Badge> : null}
@@ -128,24 +132,24 @@ export function PontinhosScreen({ sessionId }: { sessionId: string }) {
       <div className={cn('grid gap-3', session.players.length > 1 && 'grid-cols-2')}>
         {session.players.map((player) => {
           const total = totals[player.id] ?? 0
-          const closed = total >= state.targetScore
-          const leading = !closed && maxScore > 0 && !scoresTied && total === maxScore
+          const busted = isBusted(total, state.targetScore)
+          const leading = !busted && leaders.has(player.id)
           return (
             <Card
               key={player.id}
               className={cn(
                 'bg-card/90',
                 leading && 'border-primary bg-primary/10 ring-2 ring-primary/30',
-                closed && 'border-primary bg-primary/10 ring-2 ring-primary/50',
+                busted && 'border-destructive/60 bg-destructive/5 ring-2 ring-destructive/25',
               )}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-1">
                   <CardTitle className="flex min-w-0 items-center gap-1.5">
-                    {leading || closed ? <Trophy className="size-4 shrink-0 text-primary" /> : null}
+                    {leading ? <Trophy className="size-4 shrink-0 text-primary" /> : null}
                     <span className="truncate">{player.name}</span>
                   </CardTitle>
-                  {closed ? <Badge>Fechou</Badge> : null}
+                  {busted ? <Badge variant="destructive">Estourou</Badge> : null}
                 </div>
               </CardHeader>
               <CardContent>
@@ -228,7 +232,7 @@ export function PontinhosScreen({ sessionId }: { sessionId: string }) {
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>Mesa</DrawerTitle>
-            <DrawerDescription>Alvo de pontos e quem dá as cartas.</DrawerDescription>
+            <DrawerDescription>Alvo (quem chega perde) e quem dá as cartas.</DrawerDescription>
           </DrawerHeader>
           <div className="min-h-0 space-y-4 overflow-y-auto px-4 pb-2">
             <div className="rounded-lg border bg-card/90 px-3 py-2 text-xs text-muted-foreground">
@@ -312,7 +316,7 @@ export function PontinhosScreen({ sessionId }: { sessionId: string }) {
                 }}
               />
               <p className="mt-1 text-[11px] text-muted-foreground">
-                Quem chegar a {formatPoints(state.targetScore)} fecha.
+                Menos pontos ganha. Quem chegar a {formatPoints(state.targetScore)} perde.
               </p>
             </div>
           </div>
