@@ -118,15 +118,16 @@ Padrão visual (todos os jogos):
 1. Shell `relative z-10 mx-auto min-h-dvh w-full max-w-lg … pb-28 … md:max-w-4xl` (espaço pro FAB de ferramentas)
 2. Header: voltar para `/`, título do jogo, subtítulo (`Rodada N · Fulano dá as cartas` ou `Partida encerrada`), badge `Fim` se terminou, ajuda (`GameGuideButton`, some se não houver guia), engrenagem da Mesa
 3. Placar em **2 colunas no mobile** quando há mais de um lado (`grid-cols-2`)
-4. Líder: `Trophy` + `border-primary bg-primary/10 ring-2 ring-primary/30`
-5. Quem já fechou o alvo: mesmo destaque, um pouco mais forte, badge `Fechou` / `Alvo` / `Fim`. Em Pontinhos o badge é o mesmo, mas fechar é derrota — o troféu fica com a menor pontuação
-6. Ações: botão Mesa + ação principal (`Registrar rodada`, lançar mão, etc.)
-7. Histórico desfazível
-8. Drawer **Mesa**: dealer (select + Próximo), alvo, opções da regra
-9. FAB fixo **Ferramentas** + `ToolsDrawer` com `items={playerNames}` (a roleta usa os nomes da mesa)
-10. Números com `toLocaleString('pt-BR')` e `tabular-nums`
-11. Cards `bg-card/90`
-12. Copy em português; toasts via Sonner
+4. Quem dá as cartas: ícone `Hand` (`DealerMark`) ao lado do nome no card do jogador ou do grupo que contém o dealer
+5. Líder: `Trophy` + `border-primary bg-primary/10 ring-2 ring-primary/30`
+6. Quem já fechou o alvo: mesmo destaque, um pouco mais forte, badge `Fechou` / `Alvo` / `Fim`. Em Pontinhos o badge é o mesmo, mas fechar é derrota — o troféu fica com a menor pontuação
+7. Ações: botão Mesa + ação principal (`Registrar rodada`, lançar mão, etc.)
+8. Histórico desfazível
+9. Drawer **Mesa**: dealer (select + Próximo), alvo, opções da regra
+10. FAB fixo **Ferramentas** + `ToolsDrawer` com `items={playerNames}` (a roleta usa os nomes da mesa)
+11. Números com `toLocaleString('pt-BR')` e `tabular-nums`
+12. Cards `bg-card/90`
+13. Copy em português; toasts via Sonner
 
 Estado ausente: mensagem curta + link Voltar. Não explode.
 

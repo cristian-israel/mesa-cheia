@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronRight, Dices, Minus, Plus, RotateCcw, Settings2, Trop
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DealerMark } from '@/components/game/DealerMark'
 import { GameGuideButton } from '@/components/game/GameGuideButton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -138,6 +139,7 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
           const score = totals[side.id] ?? 0
           const closed = score >= state.targetScore
           const leading = !closed && maxScore > 0 && !scoresTied && score === maxScore
+          const dealing = side.playerIds.includes(state.dealerPlayerId)
           return (
             <Card
               key={side.id}
@@ -153,6 +155,7 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
                     <CardTitle className="flex items-center gap-1.5">
                       {leading || closed ? <Trophy className="size-4 shrink-0 text-primary" /> : null}
                       <span className="truncate">{side.name}</span>
+                      {dealing ? <DealerMark /> : null}
                     </CardTitle>
                     {side.playerIds.length > 1 ? (
                       <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{members}</p>
