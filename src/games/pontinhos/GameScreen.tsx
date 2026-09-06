@@ -142,7 +142,7 @@ export function PontinhosScreen({ sessionId }: { sessionId: string }) {
               className={cn(
                 'bg-card/90',
                 leading && 'border-primary bg-primary/10 ring-2 ring-primary/30',
-                closed && 'border-primary bg-primary/10 ring-2 ring-primary/50',
+                closed && 'border-destructive/60 bg-destructive/5 ring-2 ring-destructive/25',
               )}
             >
               <CardHeader className="pb-2">
@@ -152,7 +152,7 @@ export function PontinhosScreen({ sessionId }: { sessionId: string }) {
                     <span className="truncate">{player.name}</span>
                     {dealing ? <DealerMark /> : null}
                   </CardTitle>
-                  {closed ? <Badge>Fechou</Badge> : null}
+                  {closed ? <Badge variant="destructive">Fechou</Badge> : null}
                 </div>
               </CardHeader>
               <CardContent>
