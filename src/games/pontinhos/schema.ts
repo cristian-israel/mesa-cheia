@@ -41,14 +41,14 @@ export function isBusted(total: number, targetScore: number) {
   return total >= targetScore
 }
 
-/** Quem ainda não estourou o alvo; se todos estourou, a lista fica vazia. */
+/** Quem ainda não fechou o alvo; se todos fecharam, a lista fica vazia. */
 export function activePlayerIds(state: PontinhosState, playerIds: string[]) {
   const totals = playerTotals(state)
   return playerIds.filter((id) => !isBusted(totals[id] ?? 0, state.targetScore))
 }
 
 /**
- * Líderes = menor pontuação entre quem ainda não atingiu o alvo.
+ * Líderes = menor pontuação entre quem ainda não fechou o alvo.
  * Empate entre os elegíveis → ninguém destacado.
  */
 export function scoreLeaders(state: PontinhosState, playerIds: string[]) {
