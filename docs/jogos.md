@@ -105,7 +105,7 @@ Defaults nomeados no schema (`CANASTRA_DEFAULT_TARGET`, `TRUCO_DEFAULT_TARGET`, 
 
 Líder: em geral a **maior** pontuação, só se não estiver tudo empatado e o máximo for `> 0`. Empate = ninguém com `leader`. O card destaca com troféu + `bg-primary/10`.
 
-**Exceção — Pontinhos:** placar invertido. Líder = **menor** pontuação entre quem ainda não fechou o alvo. Quem fecha o alvo perde; a partida encerra igual aos outros jogos.
+**Exceção — Pontinhos:** placar invertido. Líder = **menor** pontuação entre quem ainda não fechou o alvo. Quem fecha o alvo perde (destaque vermelho no placar); a partida encerra igual aos outros jogos.
 
 Se o jogo não implementar summary, o card cai no fallback (lados sem score).
 
@@ -120,7 +120,7 @@ Padrão visual (todos os jogos):
 3. Placar em **2 colunas no mobile** quando há mais de um lado (`grid-cols-2`)
 4. Quem dá as cartas: ícone `Hand` (`DealerMark`) ao lado do nome no card do jogador ou do grupo que contém o dealer
 5. Líder: `Trophy` + `border-primary bg-primary/10 ring-2 ring-primary/30`
-6. Quem já fechou o alvo: mesmo destaque, um pouco mais forte, badge `Fechou` / `Alvo` / `Fim`. Em Pontinhos o badge é o mesmo, mas fechar é derrota — o troféu fica com a menor pontuação
+6. Quem já fechou o alvo: mesmo destaque, um pouco mais forte, badge `Fechou` / `Alvo` / `Fim`. Em Pontinhos fechar é derrota: card e badge em tom `destructive` (vermelho); o troféu fica com a menor pontuação
 7. Ações: botão Mesa + ação principal (`Registrar rodada`, lançar mão, etc.)
 8. Histórico desfazível
 9. Drawer **Mesa**: dealer (select + Próximo), alvo, opções da regra
