@@ -4,7 +4,7 @@ Cada um no próprio placar. A regra desta mesa é invertida: **quem tem menos po
 
 ## Objetivo
 
-Fazer o **menor** placar possível. Os pontos das cartas que sobram na mão vão somando. Quem chegar (ou passar) no alvo **perde** — a partida encerra e o menor placar entre quem ainda não estourou leva a vitória.
+Fazer o **menor** placar possível. Os pontos das cartas que sobram na mão vão somando. Quem chegar (ou passar) no alvo **perde** — a partida encerra e o menor placar entre quem ainda não fechou leva a vitória.
 
 Alvos comuns na Mesa: 50, 100 ou 200 (dá para escolher outro).
 
@@ -21,4 +21,4 @@ Quem bateu na mão costuma lançar **0**. Em empate de pontos na mão, ninguém 
 
 ## Como fecha
 
-Assim que alguém atinge o alvo, a sessão encerra. Esse jogador perdeu. No placar e no ranking, o destaque de vitória fica com quem tem a **menor** pontuação e ainda não estourou.
+Assim que alguém fecha o alvo, a sessão encerra. Esse jogador perdeu. No placar e no ranking, o destaque de vitória fica com quem tem a **menor** pontuação e ainda não fechou.
