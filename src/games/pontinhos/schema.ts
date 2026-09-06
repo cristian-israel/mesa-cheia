@@ -29,9 +29,35 @@ export function playerTotals(state: PontinhosState): Record<string, number> {
   return totals
 }
 
+/** Em Pontinhos, menos pontos é melhor — na mão e no placar. */
 export function roundLeaders(scores: Record<string, number>, playerIds: string[]) {
   const values = playerIds.map((id) => scores[id] ?? 0)
-  const max = Math.max(...values)
-  if (values.every((score) => score === max)) return new Set<string>()
-  return new Set(playerIds.filter((id) => (scores[id] ?? 0) === max))
+  const min = Math.min(...values)
+  if (values.every((score) => score === min)) return new Set<string>()
+  return new Set(playerIds.filter((id) => (scores[id] ?? 0) === min))
+}
+
+export function isBusted(total: number, targetScore: number) {
+  return total >= targetScore
+}
+
+/** Quem ainda não estourou o alvo; se todos estourou, a lista fica vazia. */
+export function activePlayerIds(state: PontinhosState, playerIds: string[]) {
+  const totals = playerTotals(state)
+  return playerIds.filter((id) => !isBusted(totals[id] ?? 0, state.targetScore))
+}
+
+/**
+ * Líderes = menor pontuação entre quem ainda não atingiu o alvo.
+ * Empate entre os elegíveis → ninguém destacado.
+ */
+export function scoreLeaders(state: PontinhosState, playerIds: string[]) {
+  const totals = playerTotals(state)
+  const eligible = activePlayerIds(state, playerIds)
+  if (eligible.length === 0) return new Set<string>()
+  const values = eligible.map((id) => totals[id] ?? 0)
+  const min = Math.min(...values)
+  const allTied = eligible.length > 1 && values.every((score) => score === min)
+  if (allTied) return new Set<string>()
+  return new Set(eligible.filter((id) => (totals[id] ?? 0) === min))
 }
