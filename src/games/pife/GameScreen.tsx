@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronRight, Dices, Plus, RotateCcw, Settings2, Trophy } fr
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DealerMark } from '@/components/game/DealerMark'
 import { GameGuideButton } from '@/components/game/GameGuideButton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -108,6 +109,7 @@ export function PifeScreen({ sessionId }: { sessionId: string }) {
           const pifes = won[player.id] ?? 0
           const closed = pifes >= state.targetScore
           const leading = !closed && maxScore > 0 && !scoresTied && pifes === maxScore
+          const dealing = player.id === state.dealerPlayerId
           return (
             <Card
               key={player.id}
@@ -122,6 +124,7 @@ export function PifeScreen({ sessionId }: { sessionId: string }) {
                   <CardTitle className="flex min-w-0 items-center gap-1.5">
                     {leading || closed ? <Trophy className="size-4 shrink-0 text-primary" /> : null}
                     <span className="truncate">{player.name}</span>
+                    {dealing ? <DealerMark /> : null}
                   </CardTitle>
                   {closed ? <Badge>Fechou</Badge> : null}
                 </div>

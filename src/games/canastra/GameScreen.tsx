@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronRight, Dices, Plus, RotateCcw, Settings2, Trophy } fr
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DealerMark } from '@/components/game/DealerMark'
 import { GameGuideButton } from '@/components/game/GameGuideButton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -142,6 +143,7 @@ export function CanastraScreen({ sessionId }: { sessionId: string }) {
           const closed = total >= state.targetScore
           const inBuraco = !closed && isNoBuraco(state, total)
           const leading = !closed && maxScore > 0 && !scoresTied && total === maxScore
+          const dealing = team.playerIds.includes(state.dealerPlayerId)
           return (
             <Card
               key={team.id}
@@ -158,6 +160,7 @@ export function CanastraScreen({ sessionId }: { sessionId: string }) {
                     <CardTitle className="flex items-center gap-1.5">
                       {leading || closed ? <Trophy className="size-4 shrink-0 text-primary" /> : null}
                       <span className="truncate">{team.name}</span>
+                      {dealing ? <DealerMark /> : null}
                     </CardTitle>
                     {team.playerIds.length > 1 ? (
                       <p className="mt-1 truncate text-xs text-muted-foreground">{members}</p>

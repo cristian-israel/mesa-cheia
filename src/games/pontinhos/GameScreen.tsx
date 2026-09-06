@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronRight, Dices, Plus, RotateCcw, Settings2, Trophy } fr
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DealerMark } from '@/components/game/DealerMark'
 import { GameGuideButton } from '@/components/game/GameGuideButton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -134,6 +135,7 @@ export function PontinhosScreen({ sessionId }: { sessionId: string }) {
           const total = totals[player.id] ?? 0
           const closed = isBusted(total, state.targetScore)
           const leading = !closed && leaders.has(player.id)
+          const dealing = player.id === state.dealerPlayerId
           return (
             <Card
               key={player.id}
@@ -148,6 +150,7 @@ export function PontinhosScreen({ sessionId }: { sessionId: string }) {
                   <CardTitle className="flex min-w-0 items-center gap-1.5">
                     {leading ? <Trophy className="size-4 shrink-0 text-primary" /> : null}
                     <span className="truncate">{player.name}</span>
+                    {dealing ? <DealerMark /> : null}
                   </CardTitle>
                   {closed ? <Badge>Fechou</Badge> : null}
                 </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, ChevronRight, Dices, Minus, Plus, RotateCcw, Settings2, Trophy } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DealerMark } from '@/components/game/DealerMark'
 import { GameGuideButton } from '@/components/game/GameGuideButton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -132,6 +133,7 @@ export function TrucoScreen({ sessionId }: { sessionId: string }) {
           const closed = score >= state.targetScore
           const malas = !closed && state.targetScore >= 24 && score >= half
           const leading = !closed && maxScore > 0 && !scoresTied && score === maxScore
+          const dealing = side.playerIds.includes(state.dealerPlayerId)
           return (
             <Card
               key={side.id}
@@ -149,6 +151,7 @@ export function TrucoScreen({ sessionId }: { sessionId: string }) {
                         <Trophy className="size-4 shrink-0 text-primary" />
                       ) : null}
                       <span className="truncate">{side.name}</span>
+                      {dealing ? <DealerMark /> : null}
                     </CardTitle>
                     {side.playerIds.length > 1 ? (
                       <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{members}</p>

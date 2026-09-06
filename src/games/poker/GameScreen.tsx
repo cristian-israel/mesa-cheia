@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronRight, Dices, Plus, RotateCcw, Settings2, Trophy, Use
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DealerMark } from '@/components/game/DealerMark'
 import { GameGuideButton } from '@/components/game/GameGuideButton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -111,6 +112,7 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
             !out && maxMesas > 0 && mesas === maxMesas && Object.values(won).some((n) => n < maxMesas)
           const lastOne = lastStanding && aliveIds.length === 1 && aliveIds[0] === player.id
           const ahead = leading || lastOne
+          const dealing = player.id === state.dealerPlayerId
           return (
             <Card
               key={player.id}
@@ -125,6 +127,7 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
                   <CardTitle className="flex min-w-0 items-center gap-1.5">
                     {ahead ? <Trophy className="size-4 shrink-0 text-primary" /> : null}
                     <span className="truncate">{player.name}</span>
+                    {dealing ? <DealerMark /> : null}
                   </CardTitle>
                   {out ? <Badge variant="secondary">Saiu</Badge> : null}
                   {lastOne && finished ? <Badge>Levou tudo</Badge> : null}
