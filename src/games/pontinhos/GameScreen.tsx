@@ -132,15 +132,15 @@ export function PontinhosScreen({ sessionId }: { sessionId: string }) {
       <div className={cn('grid gap-3', session.players.length > 1 && 'grid-cols-2')}>
         {session.players.map((player) => {
           const total = totals[player.id] ?? 0
-          const busted = isBusted(total, state.targetScore)
-          const leading = !busted && leaders.has(player.id)
+          const closed = isBusted(total, state.targetScore)
+          const leading = !closed && leaders.has(player.id)
           return (
             <Card
               key={player.id}
               className={cn(
                 'bg-card/90',
                 leading && 'border-primary bg-primary/10 ring-2 ring-primary/30',
-                busted && 'border-destructive/60 bg-destructive/5 ring-2 ring-destructive/25',
+                closed && 'border-primary bg-primary/10 ring-2 ring-primary/50',
               )}
             >
               <CardHeader className="pb-2">
@@ -149,7 +149,7 @@ export function PontinhosScreen({ sessionId }: { sessionId: string }) {
                     {leading ? <Trophy className="size-4 shrink-0 text-primary" /> : null}
                     <span className="truncate">{player.name}</span>
                   </CardTitle>
-                  {busted ? <Badge variant="destructive">Estourou</Badge> : null}
+                  {closed ? <Badge>Fechou</Badge> : null}
                 </div>
               </CardHeader>
               <CardContent>
