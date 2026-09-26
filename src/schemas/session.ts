@@ -14,6 +14,8 @@ export const TeamSchema = z.object({
 export const SessionSchema = z.object({
   id: z.string(),
   gameId: z.string(),
+  /** Nome livre da partida (ex. no Padrão: Uno, Dominó). */
+  title: z.string().min(1).optional(),
   players: z.array(PlayerSchema),
   teams: z.array(TeamSchema).optional(),
   createdAt: z.number(),
@@ -24,3 +26,8 @@ export const SessionSchema = z.object({
 export type Player = z.infer<typeof PlayerSchema>
 export type Team = z.infer<typeof TeamSchema>
 export type Session = z.infer<typeof SessionSchema>
+
+export function sessionTitle(session: Session, fallback: string) {
+  const title = session.title?.trim()
+  return title || fallback
+}

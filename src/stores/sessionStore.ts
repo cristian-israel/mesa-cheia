@@ -10,20 +10,28 @@ type SessionState = {
     gameId: string
     players: Player[]
     teams?: Team[]
+    title?: string
   }) => Session
+  setSessionTitle: (sessionId: string, title: string) => void
   finishSession: (sessionId: string) => void
   reopenSession: (sessionId: string) => void
   deleteSession: (sessionId: string) => void
+}
+
+function normalizeTitle(title?: string) {
+  const trimmed = title?.trim()
+  return trimmed ? trimmed : undefined
 }
 
 export const useSessionStore = create<SessionState>()(
   persist(
     (set, get) => ({
       sessions: {},
-      createSession: ({ gameId, players, teams }) => {
+      createSession: ({ gameId, players, teams, title }) => {
         const session: Session = {
           id: createId(),
           gameId,
+          title: normalizeTitle(title),
           players,
           teams,
           createdAt: Date.now(),
@@ -33,6 +41,18 @@ export const useSessionStore = create<SessionState>()(
           sessions: { ...state.sessions, [session.id]: session },
         }))
         return session
+      },
+      setSessionTitle: (sessionId, title) => {
+        const current = get().sessions[sessionId]
+        if (!current) return
+        const nextTitle = normalizeTitle(title)
+        if (current.title === nextTitle) return
+        set({
+          sessions: {
+            ...get().sessions,
+            [sessionId]: { ...current, title: nextTitle },
+          },
+        })
       },
       finishSession: (sessionId) => {
         const current = get().sessions[sessionId]
@@ -69,7 +89,7 @@ export const useSessionStore = create<SessionState>()(
     }),
     {
       name: 'pontos-sessions',
-      version: 2,
+      version: 3,
       migrate: (persisted) => persisted as { sessions: Record<string, Session> },
     },
   ),

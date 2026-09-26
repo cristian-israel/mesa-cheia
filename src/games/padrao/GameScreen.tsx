@@ -24,6 +24,7 @@ import { scoringSides } from '@/lib/teams'
 import { formatDuration, formatWhen, sessionDurationMs } from '@/lib/time'
 import { cn } from '@/lib/utils'
 import { useSessionStore } from '@/stores/sessionStore'
+import { sessionTitle } from '@/schemas/session'
 
 function formatPoints(value: number) {
   return value.toLocaleString('pt-BR')
@@ -37,11 +38,13 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
   const setDealer = usePadraoStore((s) => s.setDealer)
   const setTargetScore = usePadraoStore((s) => s.setTargetScore)
   const undoEvent = usePadraoStore((s) => s.undoEvent)
+  const setSessionTitle = useSessionStore((s) => s.setSessionTitle)
   const [toolsOpen, setToolsOpen] = useState(false)
   const [mesaOpen, setMesaOpen] = useState(false)
   const [roundOpen, setRoundOpen] = useState(false)
   const [scores, setScores] = useState<Record<string, string>>({})
   const [targetDraft, setTargetDraft] = useState<string>()
+  const [titleDraft, setTitleDraft] = useState<string>()
 
   if (!session || !state) {
     return (
@@ -59,6 +62,7 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
   const totals = sideTotals(state)
   const dealer = session.players.find((p) => p.id === state.dealerPlayerId)
   const playerNames = session.players.map((p) => p.name)
+  const displayTitle = sessionTitle(session, 'Padrão')
   const scoreValues = sides.map((side) => totals[side.id] ?? 0)
   const maxScore = Math.max(0, ...scoreValues)
   const scoresTied = scoreValues.length > 1 && scoreValues.every((score) => score === maxScore)
@@ -101,6 +105,12 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
     setTargetDraft(undefined)
   }
 
+  function commitTitle() {
+    if (titleDraft === undefined) return
+    setSessionTitle(sessionId, titleDraft)
+    setTitleDraft(undefined)
+  }
+
   return (
     <div className="relative z-10 mx-auto min-h-dvh w-full max-w-lg px-4 pb-28 pt-[max(0.75rem,env(safe-area-inset-top))] md:max-w-4xl md:pb-10 md:pt-6">
       <header className="mb-3 flex items-center gap-2">
@@ -110,7 +120,7 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
           </Link>
         </Button>
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-bold tracking-tight">Padrão</h1>
+          <h1 className="truncate text-xl font-bold tracking-tight">{displayTitle}</h1>
           <p className="truncate text-xs text-muted-foreground">
             {finished
               ? 'Partida encerrada'
@@ -256,7 +266,7 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>Mesa</DrawerTitle>
-            <DrawerDescription>Alvo da partida e quem dá as cartas.</DrawerDescription>
+            <DrawerDescription>Nome, alvo e quem dá as cartas.</DrawerDescription>
           </DrawerHeader>
           <div className="min-h-0 space-y-4 overflow-y-auto px-4 pb-2">
             <div className="rounded-lg border bg-card/90 px-3 py-2 text-xs text-muted-foreground">
@@ -268,6 +278,27 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
                   {formatDuration(sessionDurationMs(session.createdAt, session.finishedAt))}
                 </p>
               ) : null}
+            </div>
+
+            <div>
+              <Label htmlFor="session-title">Nome do jogo</Label>
+              <Input
+                id="session-title"
+                className="mt-1.5"
+                placeholder="Padrão"
+                maxLength={40}
+                value={titleDraft ?? session.title ?? ''}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onBlur={commitTitle}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.currentTarget.blur()
+                  }
+                }}
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Aparece na lista de partidas. Vazio volta a “Padrão”.
+              </p>
             </div>
 
             <div>
