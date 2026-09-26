@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, Dices, Minus, Plus, RotateCcw, Settings2, Trophy } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Dices, RotateCcw, Settings2, Trophy } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DealerMark } from '@/components/game/DealerMark'
@@ -165,25 +165,6 @@ export function TrucoScreen({ sessionId }: { sessionId: string }) {
                 <p className="text-center text-4xl font-bold tabular-nums leading-none sm:text-5xl">
                   {score}
                 </p>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="lg"
-                    aria-label={`Tirar 1 de ${side.name}`}
-                    onClick={() => applyDelta(sessionId, side.id, -1, 'Ajuste')}
-                  >
-                    <Minus />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="lg"
-                    aria-label={`Somar 1 para ${side.name}`}
-                    onClick={() => applyDelta(sessionId, side.id, 1, 'Ajuste')}
-                  >
-                    <Plus />
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           )
