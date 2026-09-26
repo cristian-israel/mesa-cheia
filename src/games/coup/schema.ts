@@ -16,6 +16,7 @@ export const CoupPartidaSchema = z.object({
 export const CoupStateSchema = z.object({
   sessionId: z.string(),
   starterPlayerId: z.string(),
+  targetPartidas: z.number().int().min(1),
   eliminatedPlayerIds: z.array(z.string()),
   partidas: z.array(CoupPartidaSchema),
   events: z.array(CoupEventSchema),
@@ -24,6 +25,8 @@ export const CoupStateSchema = z.object({
 export type CoupEvent = z.infer<typeof CoupEventSchema>
 export type CoupPartida = z.infer<typeof CoupPartidaSchema>
 export type CoupState = z.infer<typeof CoupStateSchema>
+
+export const COUP_DEFAULT_TARGET = 5
 
 export function partidasWon(state: CoupState): Record<string, number> {
   const won: Record<string, number> = {}
@@ -43,4 +46,14 @@ export function activePlayerIds(playerIds: string[], state: CoupState) {
 
 export function currentPartidaNumber(state: CoupState) {
   return state.partidas.length + 1
+}
+
+/** Rodada fechada: já tem vencedor e o placar ainda mostra quem saiu. */
+export function isRoundClosed(state: CoupState) {
+  const last = state.events.at(-1)
+  return last?.kind === 'win' && state.eliminatedPlayerIds.length > 0
+}
+
+export function reachedTarget(state: CoupState) {
+  return Object.values(partidasWon(state)).some((count) => count >= state.targetPartidas)
 }

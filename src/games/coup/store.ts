@@ -4,9 +4,12 @@ import { createId } from '@/lib/ids'
 import { useSessionStore } from '@/stores/sessionStore'
 import type { Player, Team } from '@/schemas/session'
 import {
+  COUP_DEFAULT_TARGET,
   CoupStateSchema,
   activePlayerIds,
   currentPartidaNumber,
+  isRoundClosed,
+  reachedTarget,
   type CoupState,
 } from '@/games/coup/schema'
 
@@ -16,17 +19,27 @@ type CoupStore = {
   markOut: (sessionId: string, playerId: string) => void
   undoOut: (sessionId: string, playerId: string) => void
   startNextPartida: (sessionId: string) => void
+  setTargetPartidas: (sessionId: string, targetPartidas: number) => void
   undoLastEvent: (sessionId: string) => void
   deleteSession: (sessionId: string) => void
 }
 
-function maybeFinishRound(state: CoupState) {
+function syncSessionStatus(state: CoupState) {
+  if (reachedTarget(state)) {
+    useSessionStore.getState().finishSession(state.sessionId)
+  } else {
+    useSessionStore.getState().reopenSession(state.sessionId)
+  }
+}
+
+function maybeCloseRound(state: CoupState) {
   const session = useSessionStore.getState().sessions[state.sessionId]
   if (!session) return state
 
   const ids = session.players.map((p) => p.id)
   const alive = activePlayerIds(ids, state)
   if (alive.length !== 1) return state
+  if (isRoundClosed(state)) return state
 
   const winnerPlayerId = alive[0]
   const partidaNumber = currentPartidaNumber(state)
@@ -50,7 +63,7 @@ function maybeFinishRound(state: CoupState) {
       },
     ],
   }
-  useSessionStore.getState().finishSession(state.sessionId)
+  syncSessionStatus(next)
   return next
 }
 
@@ -68,6 +81,7 @@ export const useCoupStore = create<CoupStore>()(
         const state: CoupState = {
           sessionId,
           starterPlayerId: players[0]?.id ?? '',
+          targetPartidas: COUP_DEFAULT_TARGET,
           eliminatedPlayerIds: [],
           partidas: [],
           events: [],
@@ -82,6 +96,7 @@ export const useCoupStore = create<CoupStore>()(
         const current = get().sessions[sessionId]
         const session = useSessionStore.getState().sessions[sessionId]
         if (!current || !session || session.status === 'finished') return
+        if (isRoundClosed(current)) return
         if (current.eliminatedPlayerIds.includes(playerId)) return
 
         const remaining = session.players.filter(
@@ -109,13 +124,14 @@ export const useCoupStore = create<CoupStore>()(
           )
           next = { ...next, starterPlayerId: alive[0] ?? next.starterPlayerId }
         }
-        next = maybeFinishRound(next)
+        next = maybeCloseRound(next)
         set({ sessions: { ...get().sessions, [sessionId]: next } })
       },
       undoOut: (sessionId, playerId) => {
         const current = get().sessions[sessionId]
         const session = useSessionStore.getState().sessions[sessionId]
         if (!current || !session || session.status === 'finished') return
+        if (isRoundClosed(current)) return
         if (!current.eliminatedPlayerIds.includes(playerId)) return
 
         const outIndex = [...current.events]
@@ -134,13 +150,13 @@ export const useCoupStore = create<CoupStore>()(
         const current = get().sessions[sessionId]
         const session = useSessionStore.getState().sessions[sessionId]
         if (!current || !session) return
+        if (session.status === 'finished' && reachedTarget(current)) return
 
         const ids = session.players.map((p) => p.id)
         const partidaNumber = currentPartidaNumber(current)
-        const roundClosed = session.status === 'finished'
+        const closed = isRoundClosed(current)
 
-        // Mid-round reset: drop this partida's outs from the history
-        const events = roundClosed
+        const events = closed
           ? current.events
           : current.events.filter(
               (event) => !(event.kind === 'out' && event.partidaNumber === partidaNumber),
@@ -153,7 +169,14 @@ export const useCoupStore = create<CoupStore>()(
           starterPlayerId: nextStarter(ids, current.starterPlayerId),
         }
         set({ sessions: { ...get().sessions, [sessionId]: next } })
-        useSessionStore.getState().reopenSession(sessionId)
+        syncSessionStatus(next)
+      },
+      setTargetPartidas: (sessionId, targetPartidas) => {
+        const current = get().sessions[sessionId]
+        if (!current || targetPartidas < 1) return
+        const next = { ...current, targetPartidas }
+        set({ sessions: { ...get().sessions, [sessionId]: next } })
+        syncSessionStatus(next)
       },
       undoLastEvent: (sessionId) => {
         const current = get().sessions[sessionId]
@@ -170,7 +193,7 @@ export const useCoupStore = create<CoupStore>()(
             eliminatedPlayerIds: undone?.outs ?? [],
           }
           set({ sessions: { ...get().sessions, [sessionId]: next } })
-          useSessionStore.getState().reopenSession(sessionId)
+          syncSessionStatus(next)
           return
         }
 
@@ -180,6 +203,7 @@ export const useCoupStore = create<CoupStore>()(
           eliminatedPlayerIds: current.eliminatedPlayerIds.filter((id) => id !== last.playerId),
         }
         set({ sessions: { ...get().sessions, [sessionId]: next } })
+        syncSessionStatus(next)
       },
       deleteSession: (sessionId) => {
         const next = { ...get().sessions }
@@ -189,8 +213,20 @@ export const useCoupStore = create<CoupStore>()(
     }),
     {
       name: 'pontos-coup',
-      version: 2,
-      migrate: () => ({ sessions: {} }),
+      version: 3,
+      migrate: (persisted) => {
+        const data = persisted as { sessions?: Record<string, Record<string, unknown>> }
+        const sessions: Record<string, CoupState> = {}
+        for (const [id, raw] of Object.entries(data.sessions ?? {})) {
+          const parsed = CoupStateSchema.safeParse({
+            ...raw,
+            targetPartidas:
+              typeof raw.targetPartidas === 'number' ? raw.targetPartidas : COUP_DEFAULT_TARGET,
+          })
+          if (parsed.success) sessions[id] = parsed.data
+        }
+        return { sessions }
+      },
     },
   ),
 )
