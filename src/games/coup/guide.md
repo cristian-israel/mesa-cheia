@@ -1,6 +1,6 @@
 # Coup
 
-Jogo de blefe e dedução. Cada um começa com **2 influências** (cartas) e **2 moedas**. Quem perder as duas influências sai. Ganha quem sobrar.
+Jogo de blefe e dedução. Pode ser individual ou em grupos (duplas, trios…). Cada um começa com **2 influências** (cartas) e **2 moedas**. Quem perder as duas influências sai. Nesta mesa, cada rodada vale **1 vitória** para o lado que sobrar; o alvo padrão é **5**.
 
 Baralho com 5 personagens (3 cópias de cada). Qualquer um pode **alegar** ter qualquer carta — blefar vale, mas quem for desafiado e estiver mentindo perde uma influência. O quadro está em **Anexos**.
 

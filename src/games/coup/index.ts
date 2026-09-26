@@ -11,9 +11,7 @@ registerGame({
   id: 'coup',
   label: 'Coup',
   icon: Crown,
-  minPlayers: 2,
-  maxPlayers: 6,
-  supportsTeams: false,
+  supportsTeams: true,
   schema: CoupStateSchema,
   createInitialState: (sessionId, players, teams) =>
     useCoupStore.getState().createSession(sessionId, players, teams),
