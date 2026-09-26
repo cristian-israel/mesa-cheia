@@ -1,26 +1,29 @@
 import { z } from 'zod'
 
+export const CoupEventSchema = z.object({
+  id: z.string(),
+  kind: z.enum(['out', 'win']),
+  playerId: z.string(),
+  partidaNumber: z.number().int().min(1),
+})
+
 export const CoupPartidaSchema = z.object({
   id: z.string(),
   winnerPlayerId: z.string(),
+  outs: z.array(z.string()),
 })
-
-export const CoupWinModeSchema = z.enum(['last-standing', 'target'])
 
 export const CoupStateSchema = z.object({
   sessionId: z.string(),
-  dealerPlayerId: z.string(),
-  winMode: CoupWinModeSchema,
-  targetPartidas: z.number().int().min(1),
-  partidas: z.array(CoupPartidaSchema),
+  starterPlayerId: z.string(),
   eliminatedPlayerIds: z.array(z.string()),
+  partidas: z.array(CoupPartidaSchema),
+  events: z.array(CoupEventSchema),
 })
 
+export type CoupEvent = z.infer<typeof CoupEventSchema>
 export type CoupPartida = z.infer<typeof CoupPartidaSchema>
-export type CoupWinMode = z.infer<typeof CoupWinModeSchema>
 export type CoupState = z.infer<typeof CoupStateSchema>
-
-export const COUP_DEFAULT_TARGET = 3
 
 export function partidasWon(state: CoupState): Record<string, number> {
   const won: Record<string, number> = {}
@@ -35,6 +38,9 @@ export function isEliminated(state: CoupState, playerId: string) {
 }
 
 export function activePlayerIds(playerIds: string[], state: CoupState) {
-  if (state.winMode !== 'last-standing') return playerIds
   return playerIds.filter((id) => !isEliminated(state, id))
+}
+
+export function currentPartidaNumber(state: CoupState) {
+  return state.partidas.length + 1
 }
