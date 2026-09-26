@@ -7,7 +7,7 @@ import { getGame, type SessionSummary } from '@/lib/game-registry'
 import { scoringSides } from '@/lib/teams'
 import { formatDuration, formatWhen, sessionDurationMs } from '@/lib/time'
 import { cn } from '@/lib/utils'
-import type { Session } from '@/schemas/session'
+import { sessionTitle, type Session } from '@/schemas/session'
 
 function formatPoints(value: number) {
   return value.toLocaleString('pt-BR')
@@ -55,7 +55,9 @@ export function SessionCard({ session, onDelete }: SessionCardProps) {
         <div className="flex items-start gap-2 px-3 pt-3">
           <Link to={`/jogo/${session.gameId}/${session.id}`} className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5">
-              <p className="text-sm font-semibold tracking-tight">{game?.label ?? session.gameId}</p>
+              <p className="text-sm font-semibold tracking-tight">
+                {sessionTitle(session, game?.label ?? session.gameId)}
+              </p>
               <Badge variant="outline">{summary.modeLabel}</Badge>
               {finished ? (
                 <Badge variant="secondary">Encerrada</Badge>

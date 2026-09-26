@@ -53,7 +53,9 @@ Jogos com times (Padrão, Canastra, Coup, Truco) usam `scoringSides(session)`: s
 
 `useSessionStore` (`pontos-sessions`) guarda o que é comum:
 
-- `id`, `gameId`, `players`, `teams?`, `createdAt`, `finishedAt?`, `status: 'active' | 'finished'`
+- `id`, `gameId`, `title?`, `players`, `teams?`, `createdAt`, `finishedAt?`, `status: 'active' | 'finished'`
+
+`title` é opcional: no Padrão dá para nomear a partida (Uno, Dominó, …) e o card da Home / a tela usam esse nome no lugar de “Padrão”.
 
 O store do jogo guarda só o que a regra precisa, indexado por `sessionId`:
 

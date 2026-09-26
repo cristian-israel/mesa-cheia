@@ -9,6 +9,8 @@ import { TeamBuilder } from '@/components/session/TeamBuilder'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { listGames, type GameDefinition } from '@/lib/game-registry'
 import {
   alternatePlayerOrder,
@@ -31,6 +33,7 @@ export function NovoJogo() {
 
   const [step, setStep] = useState<Step>('game')
   const [game, setGame] = useState<GameDefinition | null>(null)
+  const [title, setTitle] = useState('')
   const [players, setPlayers] = useState<Player[]>([])
   const [mode, setMode] = useState<PlayMode>('individual')
   const [teamSize, setTeamSize] = useState(2)
@@ -39,9 +42,11 @@ export function NovoJogo() {
   const [guideGame, setGuideGame] = useState<GameDefinition | null>(null)
 
   const sizes = groupSizeOptions(players.length)
+  const customTitle = game?.id === 'padrao'
 
   function pickGame(def: GameDefinition) {
     setGame(def)
+    setTitle('')
     setPlayers([])
     setTeams([])
     setOrder([])
@@ -108,6 +113,7 @@ export function NovoJogo() {
       gameId: game.id,
       players: order,
       teams: sessionTeams,
+      title: customTitle ? title : undefined,
     })
     game.createInitialState(session.id, order, sessionTeams)
     navigate(`/jogo/${game.id}/${session.id}`)
@@ -178,6 +184,22 @@ export function NovoJogo() {
 
       {step === 'players' && game ? (
         <div className="space-y-4">
+          {customTitle ? (
+            <div>
+              <Label htmlFor="session-title">Nome do jogo</Label>
+              <Input
+                id="session-title"
+                className="mt-1.5"
+                value={title}
+                placeholder="Ex.: Uno, Dominó, Buraco…"
+                maxLength={40}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Opcional. Aparece nas partidas no lugar de “Padrão”.
+              </p>
+            </div>
+          ) : null}
           {game.supportsTeams ? (
             <div className="grid grid-cols-2 gap-2">
               <button
