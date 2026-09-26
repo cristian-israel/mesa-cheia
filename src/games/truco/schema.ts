@@ -27,7 +27,7 @@ export type TrucoShortcut = {
 }
 
 export const TRUCO_SHORTCUTS: TrucoShortcut[] = [
-  { id: 'mao', label: 'Mão', delta: 1 },
+  { id: 'ponto', label: 'Ponto', delta: 1 },
   { id: 'truco', label: 'Truco', delta: 2 },
   { id: 'retruco', label: 'Retruco', delta: 3 },
   { id: 'vale4', label: 'Vale 4', delta: 4 },

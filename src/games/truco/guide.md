@@ -14,7 +14,7 @@ Quem joga a maior carta leva a vaza. Empate de valor: vale a que saiu primeiro, 
 
 | Atalho | Pontos |
 | --- | --- |
-| Mão | 1 |
+| Ponto | 1 |
 | Truco | 2 |
 | Retruco | 3 |
 | Vale 4 | 4 |
