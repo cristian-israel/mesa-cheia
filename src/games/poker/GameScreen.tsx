@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, Dices, Plus, RotateCcw, Settings2, Trophy, UserMinus } from 'lucide-react'
+import {
+  ArrowLeft,
+  ChevronRight,
+  Dices,
+  Plus,
+  RotateCcw,
+  Settings2,
+  Trophy,
+  UserMinus,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,11 +24,15 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { ToolsDrawer } from '@/components/tools/ToolsDrawer'
-import { activePlayerIds, isEliminated, mesasWon } from '@/games/poker/schema'
+import {
+  POKER_WIN_MODES,
+  activePlayerIds,
+  isEliminated,
+  isZeroed,
+  mesasWon,
+} from '@/games/poker/schema'
 import { usePokerStore } from '@/games/poker/store'
 import { formatDuration, formatWhen, sessionDurationMs } from '@/lib/time'
 import { cn } from '@/lib/utils'
@@ -32,14 +45,16 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
   const nextDealer = usePokerStore((s) => s.nextDealer)
   const setDealer = usePokerStore((s) => s.setDealer)
   const setWinMode = usePokerStore((s) => s.setWinMode)
-  const setTargetMesas = usePokerStore((s) => s.setTargetMesas)
   const toggleEliminated = usePokerStore((s) => s.toggleEliminated)
+  const toggleZeroed = usePokerStore((s) => s.toggleZeroed)
+  const declareWinner = usePokerStore((s) => s.declareWinner)
+  const clearWinner = usePokerStore((s) => s.clearWinner)
   const undoLastHand = usePokerStore((s) => s.undoLastHand)
   const [toolsOpen, setToolsOpen] = useState(false)
   const [mesaOpen, setMesaOpen] = useState(false)
   const [handOpen, setHandOpen] = useState(false)
+  const [winnerOpen, setWinnerOpen] = useState(false)
   const [winnerPlayerId, setWinnerPlayerId] = useState('')
-  const [targetDraft, setTargetDraft] = useState<string>()
 
   if (!session || !state) {
     return (
@@ -59,13 +74,16 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
   const dealer = session.players.find((p) => p.id === state.dealerPlayerId)
   const handNumber = state.hands.length + 1
   const lastStanding = state.winMode === 'last-standing'
+  const roundsMode = state.winMode === 'rounds'
   const maxMesas = Math.max(0, ...Object.values(won))
   const playerNames = session.players.filter((p) => aliveIds.includes(p.id)).map((p) => p.name)
   const alivePlayers = session.players.filter((p) => aliveIds.includes(p.id))
+  const sessionWinner = session.players.find((p) => p.id === state.sessionWinnerId)
+  const modeMeta = POKER_WIN_MODES.find((item) => item.id === state.winMode)
 
   function handleRegister() {
     if (!winnerPlayerId) {
-      toast.message('Escolha quem levou a mesa.')
+      toast.message('Escolha quem levou a mão.')
       return
     }
     registerHand(sessionId, winnerPlayerId)
@@ -73,6 +91,17 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
     setWinnerPlayerId('')
     setHandOpen(false)
     toast.success('Mão lançada.')
+  }
+
+  function handleDeclareWinner() {
+    if (!winnerPlayerId) {
+      toast.message('Escolha quem venceu a noite.')
+      return
+    }
+    declareWinner(sessionId, winnerPlayerId)
+    setWinnerPlayerId('')
+    setWinnerOpen(false)
+    toast.success('Partida encerrada.')
   }
 
   return (
@@ -87,8 +116,10 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
           <h1 className="text-xl font-bold tracking-tight">Poker</h1>
           <p className="truncate text-xs text-muted-foreground">
             {finished
-              ? 'Partida encerrada'
-              : `Mão ${handNumber} · ${dealer?.name ?? '—'} dá as cartas`}
+              ? sessionWinner
+                ? `${sessionWinner.name} venceu`
+                : 'Partida encerrada'
+              : `${modeMeta?.label ?? 'Poker'} · Mão ${handNumber} · ${dealer?.name ?? '—'} dá as cartas`}
           </p>
         </div>
         {finished ? <Badge>Fim</Badge> : null}
@@ -108,17 +139,23 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
         {session.players.map((player) => {
           const mesas = won[player.id] ?? 0
           const out = isEliminated(state, player.id)
+          const zeroed = isZeroed(state, player.id)
+          const sessionChamp = state.sessionWinnerId === player.id
           const leading =
-            !out && maxMesas > 0 && mesas === maxMesas && Object.values(won).some((n) => n < maxMesas)
+            lastStanding &&
+            !out &&
+            maxMesas > 0 &&
+            mesas === maxMesas &&
+            Object.values(won).some((n) => n < maxMesas)
           const lastOne = lastStanding && aliveIds.length === 1 && aliveIds[0] === player.id
-          const ahead = leading || lastOne
+          const ahead = leading || lastOne || sessionChamp
           const dealing = player.id === state.dealerPlayerId
           return (
             <Card
               key={player.id}
               className={cn(
                 'bg-card/90',
-                out && 'opacity-60',
+                (out || zeroed) && 'opacity-60',
                 ahead && 'border-primary bg-primary/10 ring-2 ring-primary/30',
               )}
             >
@@ -130,45 +167,92 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
                     {dealing ? <DealerMark /> : null}
                   </CardTitle>
                   {out ? <Badge variant="secondary">Saiu</Badge> : null}
+                  {zeroed ? <Badge variant="secondary">Zerou</Badge> : null}
+                  {sessionChamp ? <Badge>Venceu</Badge> : null}
                   {lastOne && finished ? <Badge>Levou tudo</Badge> : null}
-                  {!lastStanding && mesas >= state.targetMesas ? <Badge>Alvo</Badge> : null}
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
-                <div>
-                  <p className="text-3xl font-bold tabular-nums">{mesas}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {mesas === 1 ? 'mesa' : 'mesas'}
-                  </p>
-                </div>
                 {lastStanding ? (
+                  <>
+                    <div>
+                      <p className="text-3xl font-bold tabular-nums">{mesas}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {mesas === 1 ? 'mão' : 'mãos'}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      disabled={finished || (aliveIds.length <= 1 && !out)}
+                      onClick={() => toggleEliminated(sessionId, player.id)}
+                    >
+                      <UserMinus />
+                      {out ? 'Voltar' : 'Saiu'}
+                    </Button>
+                  </>
+                ) : (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     className="w-full"
-                    disabled={aliveIds.length <= 1 && !out}
-                    onClick={() => toggleEliminated(sessionId, player.id)}
+                    onClick={() => toggleZeroed(sessionId, player.id)}
                   >
                     <UserMinus />
-                    {out ? 'Voltar' : 'Saiu'}
+                    {zeroed ? 'Desfazer zerou' : 'Zerou'}
                   </Button>
-                ) : null}
+                )}
               </CardContent>
             </Card>
           )
         })}
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className={cn('mt-3 grid gap-2', roundsMode ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2')}>
         <Button type="button" variant="outline" onClick={() => setMesaOpen(true)}>
           <Settings2 />
           Mesa
         </Button>
-        <Button type="button" disabled={alivePlayers.length === 0} onClick={() => setHandOpen(true)}>
+        <Button
+          type="button"
+          disabled={alivePlayers.length === 0 || finished}
+          onClick={() => {
+            setWinnerPlayerId('')
+            setHandOpen(true)
+          }}
+        >
           <Plus />
           Nova mão
         </Button>
+        {roundsMode ? (
+          finished && state.sessionWinnerId ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="col-span-2 sm:col-span-1"
+              onClick={() => clearWinner(sessionId)}
+            >
+              Reabrir
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="secondary"
+              className="col-span-2 sm:col-span-1"
+              disabled={finished}
+              onClick={() => {
+                setWinnerPlayerId('')
+                setWinnerOpen(true)
+              }}
+            >
+              <Trophy />
+              Quem venceu
+            </Button>
+          )
+        ) : null}
       </div>
 
       <Card className="mt-3 bg-card/90">
@@ -177,21 +261,37 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
         </CardHeader>
         <CardContent>
           {state.hands.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhuma mão ainda.</p>
+            <p className="text-sm text-muted-foreground">
+              {roundsMode ? 'Nenhuma mão ainda. Toque em Nova mão.' : 'Nenhuma mão ainda.'}
+            </p>
           ) : (
             <ol className="space-y-2">
-              {state.hands.map((hand, index) => {
+              {[...state.hands].reverse().map((hand, reverseIndex) => {
+                const index = state.hands.length - reverseIndex
                 const winner = session.players.find((p) => p.id === hand.winnerPlayerId)
+                const isLast = reverseIndex === 0
                 return (
                   <li
                     key={hand.id}
-                    className="flex items-center justify-between gap-2 rounded-lg border bg-background/50 px-3 py-2 text-xs"
+                    className="flex items-center gap-2 rounded-lg border bg-background/50 px-3 py-2 text-xs"
                   >
-                    <p className="font-medium">Mão {index + 1}</p>
-                    <span className="inline-flex items-center gap-1 rounded-md border border-primary bg-primary/10 px-2 py-1 font-semibold">
+                    <p className="min-w-0 flex-1 font-medium">Mão {index}</p>
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-primary bg-primary/10 px-2 py-1 font-semibold">
                       <Trophy className="size-3 text-primary" />
                       {winner?.name ?? '—'}
                     </span>
+                    {isLast && !finished ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 shrink-0"
+                        aria-label="Desfazer última mão"
+                        onClick={() => undoLastHand(sessionId)}
+                      >
+                        <RotateCcw />
+                      </Button>
+                    ) : null}
                   </li>
                 )
               })}
@@ -205,7 +305,7 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
           <DrawerHeader>
             <DrawerTitle>Mesa</DrawerTitle>
             <DrawerDescription>
-              Quem dá as cartas, e se a partida acaba quando só resta um ou num alvo de mesas.
+              Escolha o modo da noite e quem dá as cartas.
             </DrawerDescription>
           </DrawerHeader>
           <div className="min-h-0 space-y-4 overflow-y-auto px-4 pb-2">
@@ -218,6 +318,30 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
                   {formatDuration(sessionDurationMs(session.createdAt, session.finishedAt))}
                 </p>
               ) : null}
+            </div>
+
+            <div>
+              <Label>Modo</Label>
+              <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+                {POKER_WIN_MODES.map((mode) => (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    disabled={finished}
+                    onClick={() => setWinMode(sessionId, mode.id)}
+                    className={cn(
+                      'rounded-xl border bg-card/90 p-3 text-left transition-colors',
+                      state.winMode === mode.id
+                        ? 'border-primary ring-2 ring-primary/30'
+                        : 'hover:bg-accent/40',
+                      finished && 'opacity-60',
+                    )}
+                  >
+                    <p className="text-sm font-semibold">{mode.label}</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">{mode.hint}</p>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -255,49 +379,6 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
                 </div>
               </div>
             </div>
-
-            <div className="flex items-center justify-between gap-3 rounded-lg border bg-card/90 px-3 py-2">
-              <div>
-                <Label htmlFor="win-mode">Quem ganhar tudo</Label>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  {lastStanding
-                    ? 'A partida acaba quando só resta um na mesa.'
-                    : 'Desligado: vale o alvo de mesas levadas.'}
-                </p>
-              </div>
-              <Switch
-                id="win-mode"
-                checked={lastStanding}
-                disabled={finished}
-                onCheckedChange={(checked) =>
-                  setWinMode(sessionId, checked ? 'last-standing' : 'target')
-                }
-              />
-            </div>
-
-            {!lastStanding ? (
-              <div>
-                <Label htmlFor="target-mesas">Alvo (mesas)</Label>
-                <Input
-                  id="target-mesas"
-                  className="mt-1.5"
-                  inputMode="numeric"
-                  value={targetDraft ?? String(state.targetMesas)}
-                  disabled={finished}
-                  onChange={(e) => setTargetDraft(e.target.value)}
-                  onBlur={() => {
-                    const value = Number(targetDraft)
-                    if (Number.isInteger(value) && value >= 1) {
-                      setTargetMesas(sessionId, value)
-                    }
-                    setTargetDraft(undefined)
-                  }}
-                />
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Quem levar {state.targetMesas} {state.targetMesas === 1 ? 'mesa' : 'mesas'} fecha.
-                </p>
-              </div>
-            ) : null}
           </div>
           <DrawerFooter>
             <Button type="button" variant="outline" onClick={() => setMesaOpen(false)}>
@@ -311,13 +392,17 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>Nova mão</DrawerTitle>
-            <DrawerDescription>Só registra quem levou a mesa.</DrawerDescription>
+            <DrawerDescription>
+              {roundsMode
+                ? 'Só registra quem levou esta mão — sem placar de pontos.'
+                : 'Registra quem levou a mão.'}
+            </DrawerDescription>
           </DrawerHeader>
           <div className="min-h-0 space-y-3 overflow-y-auto px-4 pb-2">
             <div>
-              <Label htmlFor="winner">Levou a mesa</Label>
+              <Label htmlFor="hand-winner">Levou a mão</Label>
               <select
-                id="winner"
+                id="hand-winner"
                 disabled={finished}
                 value={winnerPlayerId}
                 onChange={(e) => setWinnerPlayerId(e.target.value)}
@@ -336,14 +421,46 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
             <Button type="button" disabled={finished || !winnerPlayerId} onClick={handleRegister}>
               Lançar mão
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={state.hands.length === 0}
-              onClick={() => undoLastHand(sessionId)}
-            >
-              <RotateCcw />
-              Desfazer última
+            <Button type="button" variant="ghost" onClick={() => setHandOpen(false)}>
+              Cancelar
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={winnerOpen} onOpenChange={setWinnerOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Quem venceu</DrawerTitle>
+            <DrawerDescription>
+              Encerra a noite com o vencedor. Quem zerou fica marcado no placar.
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="min-h-0 space-y-3 overflow-y-auto px-4 pb-2">
+            <div>
+              <Label htmlFor="session-winner">Vencedor</Label>
+              <select
+                id="session-winner"
+                value={winnerPlayerId}
+                onChange={(e) => setWinnerPlayerId(e.target.value)}
+                className="mt-1.5 flex h-9 w-full rounded-md border border-input bg-background px-2.5 text-sm shadow-sm"
+              >
+                <option value="">Escolher…</option>
+                {session.players.map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {player.name}
+                    {isZeroed(state, player.id) ? ' (zerou)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DrawerFooter>
+            <Button type="button" disabled={!winnerPlayerId} onClick={handleDeclareWinner}>
+              Encerrar partida
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setWinnerOpen(false)}>
+              Cancelar
             </Button>
           </DrawerFooter>
         </DrawerContent>
