@@ -4,10 +4,8 @@ import { createId } from '@/lib/ids'
 import { useSessionStore } from '@/stores/sessionStore'
 import type { Player, Team } from '@/schemas/session'
 import {
-  POKER_DEFAULT_TARGET,
   PokerStateSchema,
   activePlayerIds,
-  mesasWon,
   type PokerState,
   type PokerWinMode,
 } from '@/games/poker/schema'
@@ -19,10 +17,16 @@ type PokerStore = {
   nextDealer: (sessionId: string) => void
   setDealer: (sessionId: string, playerId: string) => void
   setWinMode: (sessionId: string, winMode: PokerWinMode) => void
-  setTargetMesas: (sessionId: string, targetMesas: number) => void
   toggleEliminated: (sessionId: string, playerId: string) => void
+  toggleZeroed: (sessionId: string, playerId: string) => void
+  declareWinner: (sessionId: string, playerId: string) => void
+  clearWinner: (sessionId: string) => void
   undoLastHand: (sessionId: string) => void
   deleteSession: (sessionId: string) => void
+}
+
+type PersistedPoker = {
+  sessions: Record<string, Record<string, unknown>>
 }
 
 function patchSession(
@@ -35,42 +39,36 @@ function patchSession(
   return { ...sessions, [sessionId]: { ...current, ...patch } }
 }
 
-function maybeFinish(state: PokerState) {
+function maybeFinishLastStanding(state: PokerState) {
   const session = useSessionStore.getState().sessions[state.sessionId]
-  if (!session) return
+  if (!session || state.winMode !== 'last-standing') return
   const ids = session.players.map((p) => p.id)
-
-  if (state.winMode === 'last-standing') {
-    if (activePlayerIds(ids, state).length === 1) {
-      useSessionStore.getState().finishSession(state.sessionId)
-    }
-    return
-  }
-
-  const won = mesasWon(state)
-  const reached = Object.values(won).some((count) => count >= state.targetMesas)
-  if (reached) {
+  if (activePlayerIds(ids, state).length === 1) {
     useSessionStore.getState().finishSession(state.sessionId)
   }
 }
 
-function maybeReopen(state: PokerState) {
+function maybeReopenLastStanding(state: PokerState) {
   const session = useSessionStore.getState().sessions[state.sessionId]
-  if (!session) return
+  if (!session || state.winMode !== 'last-standing') return
   const ids = session.players.map((p) => p.id)
-
-  if (state.winMode === 'last-standing') {
-    if (activePlayerIds(ids, state).length > 1) {
-      useSessionStore.getState().reopenSession(state.sessionId)
-    }
-    return
-  }
-
-  const won = mesasWon(state)
-  const reached = Object.values(won).some((count) => count >= state.targetMesas)
-  if (!reached) {
+  if (activePlayerIds(ids, state).length > 1) {
     useSessionStore.getState().reopenSession(state.sessionId)
   }
+}
+
+function migratePokerState(raw: Record<string, unknown>): PokerState {
+  const winMode = raw.winMode === 'target' || raw.winMode === 'rounds' ? 'rounds' : 'last-standing'
+  const parsed = PokerStateSchema.parse({
+    sessionId: raw.sessionId,
+    dealerPlayerId: raw.dealerPlayerId,
+    winMode,
+    hands: raw.hands ?? [],
+    eliminatedPlayerIds: raw.eliminatedPlayerIds ?? [],
+    zeroedPlayerIds: raw.zeroedPlayerIds ?? [],
+    sessionWinnerId: raw.sessionWinnerId,
+  })
+  return parsed
 }
 
 export const usePokerStore = create<PokerStore>()(
@@ -82,9 +80,9 @@ export const usePokerStore = create<PokerStore>()(
           sessionId,
           dealerPlayerId: players[0]?.id ?? '',
           winMode: 'last-standing',
-          targetMesas: POKER_DEFAULT_TARGET,
           hands: [],
           eliminatedPlayerIds: [],
+          zeroedPlayerIds: [],
         }
         const parsed = PokerStateSchema.parse(state)
         set((current) => ({
@@ -100,7 +98,6 @@ export const usePokerStore = create<PokerStore>()(
           hands: [...current.hands, { id: createId(), winnerPlayerId }],
         }
         set({ sessions: { ...get().sessions, [sessionId]: next } })
-        maybeFinish(next)
       },
       nextDealer: (sessionId) => {
         const current = get().sessions[sessionId]
@@ -121,23 +118,17 @@ export const usePokerStore = create<PokerStore>()(
       },
       setWinMode: (sessionId, winMode) => {
         const current = get().sessions[sessionId]
-        if (!current) return
+        if (!current || current.winMode === winMode) return
         const next: PokerState = {
           ...current,
           winMode,
-          eliminatedPlayerIds: winMode === 'target' ? [] : current.eliminatedPlayerIds,
+          eliminatedPlayerIds: winMode === 'rounds' ? [] : current.eliminatedPlayerIds,
+          zeroedPlayerIds: winMode === 'last-standing' ? [] : current.zeroedPlayerIds,
+          sessionWinnerId: undefined,
         }
         set({ sessions: { ...get().sessions, [sessionId]: next } })
-        maybeFinish(next)
-        maybeReopen(next)
-      },
-      setTargetMesas: (sessionId, targetMesas) => {
-        const current = get().sessions[sessionId]
-        if (!current) return
-        const next = { ...current, targetMesas }
-        set({ sessions: { ...get().sessions, [sessionId]: next } })
-        maybeFinish(next)
-        maybeReopen(next)
+        useSessionStore.getState().reopenSession(sessionId)
+        maybeFinishLastStanding(next)
       },
       toggleEliminated: (sessionId, playerId) => {
         const current = get().sessions[sessionId]
@@ -160,15 +151,43 @@ export const usePokerStore = create<PokerStore>()(
           next.dealerPlayerId = ids[0] ?? next.dealerPlayerId
         }
         set({ sessions: { ...get().sessions, [sessionId]: next } })
-        maybeFinish(next)
-        maybeReopen(next)
+        maybeFinishLastStanding(next)
+        maybeReopenLastStanding(next)
+      },
+      toggleZeroed: (sessionId, playerId) => {
+        const current = get().sessions[sessionId]
+        if (!current || current.winMode !== 'rounds') return
+        const zeroed = new Set(current.zeroedPlayerIds)
+        if (zeroed.has(playerId)) {
+          zeroed.delete(playerId)
+        } else {
+          zeroed.add(playerId)
+        }
+        set({
+          sessions: patchSession(get().sessions, sessionId, {
+            zeroedPlayerIds: [...zeroed],
+          }),
+        })
+      },
+      declareWinner: (sessionId, playerId) => {
+        const current = get().sessions[sessionId]
+        if (!current || current.winMode !== 'rounds') return
+        const next: PokerState = { ...current, sessionWinnerId: playerId }
+        set({ sessions: { ...get().sessions, [sessionId]: next } })
+        useSessionStore.getState().finishSession(sessionId)
+      },
+      clearWinner: (sessionId) => {
+        const current = get().sessions[sessionId]
+        if (!current) return
+        const next: PokerState = { ...current, sessionWinnerId: undefined }
+        set({ sessions: { ...get().sessions, [sessionId]: next } })
+        useSessionStore.getState().reopenSession(sessionId)
       },
       undoLastHand: (sessionId) => {
         const current = get().sessions[sessionId]
         if (!current || current.hands.length === 0) return
         const next = { ...current, hands: current.hands.slice(0, -1) }
         set({ sessions: { ...get().sessions, [sessionId]: next } })
-        maybeReopen(next)
       },
       deleteSession: (sessionId) => {
         const next = { ...get().sessions }
@@ -176,6 +195,17 @@ export const usePokerStore = create<PokerStore>()(
         set({ sessions: next })
       },
     }),
-    { name: 'pontos-poker', version: 1 },
+    {
+      name: 'pontos-poker',
+      version: 2,
+      migrate: (persisted) => {
+        const data = (persisted ?? { sessions: {} }) as PersistedPoker
+        const sessions: Record<string, PokerState> = {}
+        for (const [id, raw] of Object.entries(data.sessions ?? {})) {
+          sessions[id] = migratePokerState(raw)
+        }
+        return { sessions }
+      },
+    },
   ),
 )
