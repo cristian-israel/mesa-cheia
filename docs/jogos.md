@@ -47,7 +47,7 @@ import '@/games'
 
 O botão de ajuda nas telas é `GameGuideButton` — só renderiza se o jogo tiver `guide`. O drawer é `GameGuideDrawer`.
 
-Jogos com times (Padrão, Canastra, Truco) usam `scoringSides(session)`: se há `session.teams`, cada time é um lado; senão cada jogador vira um lado de uma pessoa. Coup, Pife, Poker e Pontinhos são sempre individuais (`supportsTeams: false`).
+Jogos com times (Padrão, Canastra, Coup, Truco) usam `scoringSides(session)`: se há `session.teams`, cada time é um lado; senão cada jogador vira um lado de uma pessoa. Pife, Poker e Pontinhos são sempre individuais (`supportsTeams: false`).
 
 ## Sessão vs estado do jogo
 

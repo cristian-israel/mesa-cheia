@@ -19,13 +19,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ToolsDrawer } from '@/components/tools/ToolsDrawer'
 import {
-  activePlayerIds,
+  activeSides,
   currentPartidaNumber,
   isEliminated,
   isRoundClosed,
   partidasWon,
+  sideLabel,
 } from '@/games/coup/schema'
 import { useCoupStore } from '@/games/coup/store'
+import { scoringSides } from '@/lib/teams'
 import { cn } from '@/lib/utils'
 import { useSessionStore } from '@/stores/sessionStore'
 
@@ -54,24 +56,23 @@ export function CoupScreen({ sessionId }: { sessionId: string }) {
 
   const finished = session.status === 'finished'
   const roundClosed = isRoundClosed(state)
+  const sides = scoringSides(session)
   const won = partidasWon(state)
-  const playerIds = session.players.map((p) => p.id)
-  const aliveIds = activePlayerIds(playerIds, state)
+  const alive = activeSides(sides, state)
   const starter = session.players.find((p) => p.id === state.starterPlayerId)
   const partidaNumber = currentPartidaNumber(state)
   const maxPartidas = Math.max(0, ...Object.values(won))
   const playerNames = session.players.map((p) => p.name)
   const recent = [...state.events].reverse()
-  const soleSurvivor = roundClosed && aliveIds.length === 1 ? aliveIds[0] : null
+  const soleSurvivor = roundClosed && alive.length === 1 ? alive[0].id : null
 
-  function handleOut(playerId: string) {
-    const player = session.players.find((p) => p.id === playerId)
-    markOut(sessionId, playerId)
-    toast.message(`${player?.name ?? 'Alguém'} saiu.`)
+  function handleOut(sideId: string) {
+    markOut(sessionId, sideId)
+    toast.message(`${sideLabel(session, sideId)} saiu.`)
   }
 
-  function handleBack(playerId: string) {
-    undoOut(sessionId, playerId)
+  function handleBack(sideId: string) {
+    undoOut(sessionId, sideId)
   }
 
   function handleNovaPartida() {
@@ -116,10 +117,10 @@ export function CoupScreen({ sessionId }: { sessionId: string }) {
         </Button>
       </header>
 
-      <div className={cn('grid gap-3', session.players.length > 1 && 'grid-cols-2')}>
-        {session.players.map((player) => {
-          const partidas = won[player.id] ?? 0
-          const out = isEliminated(state, player.id)
+      <div className={cn('grid gap-3', sides.length > 1 && 'grid-cols-2')}>
+        {sides.map((side) => {
+          const partidas = won[side.id] ?? 0
+          const out = isEliminated(state, side.id)
           const hitTarget = partidas >= state.targetPartidas
           const leading =
             !out &&
@@ -127,12 +128,16 @@ export function CoupScreen({ sessionId }: { sessionId: string }) {
             maxPartidas > 0 &&
             partidas === maxPartidas &&
             Object.values(won).some((n) => n < maxPartidas)
-          const lastOne = soleSurvivor === player.id
+          const lastOne = soleSurvivor === side.id
           const ahead = leading || lastOne || hitTarget
-          const starting = player.id === state.starterPlayerId && !out
+          const starting = side.playerIds.includes(state.starterPlayerId) && !out
+          const members = side.playerIds
+            .map((id) => session.players.find((p) => p.id === id)?.name)
+            .filter(Boolean)
+            .join(' · ')
           return (
             <Card
-              key={player.id}
+              key={side.id}
               className={cn(
                 'bg-card/90',
                 out && 'opacity-60',
@@ -142,11 +147,16 @@ export function CoupScreen({ sessionId }: { sessionId: string }) {
             >
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-1">
-                  <CardTitle className="flex min-w-0 items-center gap-1.5">
-                    {ahead ? <Trophy className="size-4 shrink-0 text-primary" /> : null}
-                    <span className="truncate">{player.name}</span>
-                    {starting ? <DealerMark /> : null}
-                  </CardTitle>
+                  <div className="min-w-0">
+                    <CardTitle className="flex min-w-0 items-center gap-1.5">
+                      {ahead ? <Trophy className="size-4 shrink-0 text-primary" /> : null}
+                      <span className="truncate">{side.name}</span>
+                      {starting ? <DealerMark /> : null}
+                    </CardTitle>
+                    {side.playerIds.length > 1 ? (
+                      <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{members}</p>
+                    ) : null}
+                  </div>
                   {out ? <Badge variant="secondary">Saiu</Badge> : null}
                   {lastOne && !hitTarget ? <Badge>Último de pé</Badge> : null}
                   {hitTarget ? <Badge>Alvo</Badge> : null}
@@ -164,8 +174,8 @@ export function CoupScreen({ sessionId }: { sessionId: string }) {
                   variant="outline"
                   size="sm"
                   className="w-full"
-                  disabled={finished || roundClosed || (aliveIds.length <= 1 && !out)}
-                  onClick={() => (out ? handleBack(player.id) : handleOut(player.id))}
+                  disabled={finished || roundClosed || (alive.length <= 1 && !out)}
+                  onClick={() => (out ? handleBack(side.id) : handleOut(side.id))}
                 >
                   {out ? <UserPlus /> : <UserMinus />}
                   {out ? 'Voltar' : 'Saiu'}
@@ -207,7 +217,7 @@ export function CoupScreen({ sessionId }: { sessionId: string }) {
           ) : (
             <ol className="space-y-2">
               {recent.map((event) => {
-                const player = session.players.find((p) => p.id === event.playerId)
+                const name = sideLabel(session, event.sideId)
                 return (
                   <li
                     key={event.id}
@@ -217,12 +227,12 @@ export function CoupScreen({ sessionId }: { sessionId: string }) {
                     {event.kind === 'win' ? (
                       <span className="inline-flex items-center gap-1 rounded-md border border-primary bg-primary/10 px-2 py-1 font-semibold">
                         <Trophy className="size-3 text-primary" />
-                        {player?.name ?? '—'} venceu
+                        {name} venceu
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 rounded-md border px-2 py-1 font-semibold text-muted-foreground">
                         <UserMinus className="size-3" />
-                        {player?.name ?? '—'} saiu
+                        {name} saiu
                       </span>
                     )}
                   </li>

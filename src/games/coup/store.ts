@@ -1,14 +1,16 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { createId } from '@/lib/ids'
+import { scoringSides } from '@/lib/teams'
 import { useSessionStore } from '@/stores/sessionStore'
 import type { Player, Team } from '@/schemas/session'
 import {
   COUP_DEFAULT_TARGET,
   CoupStateSchema,
-  activePlayerIds,
+  activeSides,
   currentPartidaNumber,
   isRoundClosed,
+  playerSideId,
   reachedTarget,
   type CoupState,
 } from '@/games/coup/schema'
@@ -16,8 +18,8 @@ import {
 type CoupStore = {
   sessions: Record<string, CoupState>
   createSession: (sessionId: string, players: Player[], teams?: Team[]) => CoupState
-  markOut: (sessionId: string, playerId: string) => void
-  undoOut: (sessionId: string, playerId: string) => void
+  markOut: (sessionId: string, sideId: string) => void
+  undoOut: (sessionId: string, sideId: string) => void
   startNextPartida: (sessionId: string) => void
   setTargetPartidas: (sessionId: string, targetPartidas: number) => void
   undoLastEvent: (sessionId: string) => void
@@ -36,12 +38,12 @@ function maybeCloseRound(state: CoupState) {
   const session = useSessionStore.getState().sessions[state.sessionId]
   if (!session) return state
 
-  const ids = session.players.map((p) => p.id)
-  const alive = activePlayerIds(ids, state)
+  const sides = scoringSides(session)
+  const alive = activeSides(sides, state)
   if (alive.length !== 1) return state
   if (isRoundClosed(state)) return state
 
-  const winnerPlayerId = alive[0]
+  const winnerSideId = alive[0].id
   const partidaNumber = currentPartidaNumber(state)
   const next: CoupState = {
     ...state,
@@ -49,8 +51,8 @@ function maybeCloseRound(state: CoupState) {
       ...state.partidas,
       {
         id: createId(),
-        winnerPlayerId,
-        outs: [...state.eliminatedPlayerIds],
+        winnerSideId,
+        outs: [...state.eliminatedSideIds],
       },
     ],
     events: [
@@ -58,7 +60,7 @@ function maybeCloseRound(state: CoupState) {
       {
         id: createId(),
         kind: 'win',
-        playerId: winnerPlayerId,
+        sideId: winnerSideId,
         partidaNumber,
       },
     ],
@@ -73,6 +75,16 @@ function nextStarter(playerIds: string[], currentId: string) {
   return playerIds[(idx + 1) % playerIds.length] ?? playerIds[0]
 }
 
+function alivePlayerIds(sessionPlayers: Player[], sides: Team[], state: CoupState) {
+  const aliveSideIds = new Set(activeSides(sides, state).map((side) => side.id))
+  return sessionPlayers
+    .filter((player) => {
+      const sideId = sides.find((side) => side.playerIds.includes(player.id))?.id
+      return sideId ? aliveSideIds.has(sideId) : false
+    })
+    .map((player) => player.id)
+}
+
 export const useCoupStore = create<CoupStore>()(
   persist(
     (set, get) => ({
@@ -82,7 +94,7 @@ export const useCoupStore = create<CoupStore>()(
           sessionId,
           starterPlayerId: players[0]?.id ?? '',
           targetPartidas: COUP_DEFAULT_TARGET,
-          eliminatedPlayerIds: [],
+          eliminatedSideIds: [],
           partidas: [],
           events: [],
         }
@@ -92,56 +104,55 @@ export const useCoupStore = create<CoupStore>()(
         }))
         return parsed
       },
-      markOut: (sessionId, playerId) => {
+      markOut: (sessionId, sideId) => {
         const current = get().sessions[sessionId]
         const session = useSessionStore.getState().sessions[sessionId]
         if (!current || !session || session.status === 'finished') return
         if (isRoundClosed(current)) return
-        if (current.eliminatedPlayerIds.includes(playerId)) return
+        if (current.eliminatedSideIds.includes(sideId)) return
 
-        const remaining = session.players.filter(
-          (p) => p.id !== playerId && !current.eliminatedPlayerIds.includes(p.id),
-        )
+        const sides = scoringSides(session)
+        const remaining = activeSides(sides, current).filter((side) => side.id !== sideId)
         if (remaining.length < 1) return
 
         let next: CoupState = {
           ...current,
-          eliminatedPlayerIds: [...current.eliminatedPlayerIds, playerId],
+          eliminatedSideIds: [...current.eliminatedSideIds, sideId],
           events: [
             ...current.events,
             {
               id: createId(),
               kind: 'out',
-              playerId,
+              sideId,
               partidaNumber: currentPartidaNumber(current),
             },
           ],
         }
-        if (next.eliminatedPlayerIds.includes(next.starterPlayerId)) {
-          const alive = activePlayerIds(
-            session.players.map((p) => p.id),
-            next,
-          )
+
+        const starterSide = playerSideId(session, next.starterPlayerId)
+        if (starterSide && next.eliminatedSideIds.includes(starterSide)) {
+          const alive = alivePlayerIds(session.players, sides, next)
           next = { ...next, starterPlayerId: alive[0] ?? next.starterPlayerId }
         }
+
         next = maybeCloseRound(next)
         set({ sessions: { ...get().sessions, [sessionId]: next } })
       },
-      undoOut: (sessionId, playerId) => {
+      undoOut: (sessionId, sideId) => {
         const current = get().sessions[sessionId]
         const session = useSessionStore.getState().sessions[sessionId]
         if (!current || !session || session.status === 'finished') return
         if (isRoundClosed(current)) return
-        if (!current.eliminatedPlayerIds.includes(playerId)) return
+        if (!current.eliminatedSideIds.includes(sideId)) return
 
         const outIndex = [...current.events]
           .reverse()
-          .findIndex((event) => event.kind === 'out' && event.playerId === playerId)
+          .findIndex((event) => event.kind === 'out' && event.sideId === sideId)
         if (outIndex < 0) return
         const absolute = current.events.length - 1 - outIndex
         const next: CoupState = {
           ...current,
-          eliminatedPlayerIds: current.eliminatedPlayerIds.filter((id) => id !== playerId),
+          eliminatedSideIds: current.eliminatedSideIds.filter((id) => id !== sideId),
           events: current.events.filter((_, index) => index !== absolute),
         }
         set({ sessions: { ...get().sessions, [sessionId]: next } })
@@ -165,7 +176,7 @@ export const useCoupStore = create<CoupStore>()(
         const next: CoupState = {
           ...current,
           events,
-          eliminatedPlayerIds: [],
+          eliminatedSideIds: [],
           starterPlayerId: nextStarter(ids, current.starterPlayerId),
         }
         set({ sessions: { ...get().sessions, [sessionId]: next } })
@@ -190,7 +201,7 @@ export const useCoupStore = create<CoupStore>()(
             ...current,
             events,
             partidas: current.partidas.slice(0, -1),
-            eliminatedPlayerIds: undone?.outs ?? [],
+            eliminatedSideIds: undone?.outs ?? [],
           }
           set({ sessions: { ...get().sessions, [sessionId]: next } })
           syncSessionStatus(next)
@@ -200,7 +211,7 @@ export const useCoupStore = create<CoupStore>()(
         const next: CoupState = {
           ...current,
           events,
-          eliminatedPlayerIds: current.eliminatedPlayerIds.filter((id) => id !== last.playerId),
+          eliminatedSideIds: current.eliminatedSideIds.filter((id) => id !== last.sideId),
         }
         set({ sessions: { ...get().sessions, [sessionId]: next } })
         syncSessionStatus(next)
@@ -213,15 +224,42 @@ export const useCoupStore = create<CoupStore>()(
     }),
     {
       name: 'pontos-coup',
-      version: 3,
+      version: 4,
       migrate: (persisted) => {
         const data = persisted as { sessions?: Record<string, Record<string, unknown>> }
         const sessions: Record<string, CoupState> = {}
         for (const [id, raw] of Object.entries(data.sessions ?? {})) {
+          const legacyEvents = Array.isArray(raw.events) ? raw.events : []
+          const legacyPartidas = Array.isArray(raw.partidas) ? raw.partidas : []
+          const legacyOuts = Array.isArray(raw.eliminatedSideIds)
+            ? raw.eliminatedSideIds
+            : Array.isArray(raw.eliminatedPlayerIds)
+              ? raw.eliminatedPlayerIds
+              : []
+
           const parsed = CoupStateSchema.safeParse({
-            ...raw,
+            sessionId: raw.sessionId ?? id,
+            starterPlayerId: raw.starterPlayerId ?? '',
             targetPartidas:
               typeof raw.targetPartidas === 'number' ? raw.targetPartidas : COUP_DEFAULT_TARGET,
+            eliminatedSideIds: legacyOuts,
+            partidas: legacyPartidas.map((partida) => {
+              const row = partida as Record<string, unknown>
+              return {
+                id: row.id,
+                winnerSideId: row.winnerSideId ?? row.winnerPlayerId,
+                outs: row.outs ?? [],
+              }
+            }),
+            events: legacyEvents.map((event) => {
+              const row = event as Record<string, unknown>
+              return {
+                id: row.id,
+                kind: row.kind,
+                sideId: row.sideId ?? row.playerId,
+                partidaNumber: row.partidaNumber,
+              }
+            }),
           })
           if (parsed.success) sessions[id] = parsed.data
         }
