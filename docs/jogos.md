@@ -2,7 +2,7 @@
 
 Cada jogo é um plugin. A sessão (quem joga, grupos, status) vive no store global; pontos, dealer e regras ficam no store do jogo. Não há backend: tudo é `localStorage` via Zustand persist.
 
-Hoje: Padrão, Canastra, Pife, Poker, Pontinhos e Truco gaúcho. O que se repete entre eles é o padrão. O que muda é só a regra da mesa.
+Hoje: Padrão, Canastra, Coup, Pife, Poker, Pontinhos e Truco gaúcho. O que se repete entre eles é o padrão. O que muda é só a regra da mesa.
 
 ## Anatomia
 
@@ -31,7 +31,7 @@ import '@/games'
 
 | Campo | Papel |
 | --- | --- |
-| `id` | slug estável (`padrao`, `canastra`, `pife`, `poker`, `pontinhos`, `truco`). Entra na URL e em `Session.gameId` |
+| `id` | slug estável (`padrao`, `canastra`, `coup`, `pife`, `poker`, `pontinhos`, `truco`). Entra na URL e em `Session.gameId` |
 | `label` | nome na UI, em português |
 | `icon` | Lucide |
 | `minPlayers` / `maxPlayers` | opcionais; padrão **2–12** (`GAME_MIN_PLAYERS` / `GAME_MAX_PLAYERS`) |
@@ -47,7 +47,7 @@ import '@/games'
 
 O botão de ajuda nas telas é `GameGuideButton` — só renderiza se o jogo tiver `guide`. O drawer é `GameGuideDrawer`.
 
-Jogos com times (Padrão, Canastra, Truco) usam `scoringSides(session)`: se há `session.teams`, cada time é um lado; senão cada jogador vira um lado de uma pessoa. Pife, Poker e Pontinhos são sempre individuais (`supportsTeams: false`).
+Jogos com times (Padrão, Canastra, Truco) usam `scoringSides(session)`: se há `session.teams`, cada time é um lado; senão cada jogador vira um lado de uma pessoa. Coup, Pife, Poker e Pontinhos são sempre individuais (`supportsTeams: false`).
 
 ## Sessão vs estado do jogo
 
