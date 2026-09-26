@@ -9,8 +9,8 @@ Baralho com 5 personagens (3 cópias de cada). Qualquer um pode **alegar** ter q
 | Carta | Ação | Contração |
 | --- | --- | --- |
 | **10 · Duque** | Imposto — pegar 3 moedas do banco | Bloquear Ajuda Estrangeira |
-| **J · Assassino** | Assassinar — pagar 3 moedas para eliminar uma influência de alguém | — |
-| **Q · Condessa** | — | Bloquear Assassinato |
+| **J · Assassino** | Assassinar — pagar 3 moedas para eliminar uma influência de alguém | **Não bloqueia** assassinato |
+| **Q · Condessa** | — | Bloquear Assassinato (só ela) |
 | **K · Capitão** | Roubar — até 2 moedas de outro jogador | Bloquear Roubo |
 | **A · Embaixador** | Trocar cartas — olhar o topo do baralho, ficar com as que quiser e devolver o resto | Bloquear Roubo |
 
@@ -25,7 +25,7 @@ Baralho com 5 personagens (3 cópias de cada). Qualquer um pode **alegar** ter q
 ## Regras que importam
 
 - Com **10 ou mais** moedas no início do turno, o Golpe é **obrigatório**.
-- Assassinato custa 3 e a Condessa bloqueia.
+- Assassinato custa 3. **Só a Condessa** bloqueia — ter Assassino não impede outro Assassino de te matar.
 - Roubo: Capitão ou Embaixador bloqueiam.
 - Ajuda Estrangeira: o Duque bloqueia.
 
