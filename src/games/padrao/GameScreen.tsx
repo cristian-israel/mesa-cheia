@@ -17,8 +17,16 @@ import {
 } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { ToolsDrawer } from '@/components/tools/ToolsDrawer'
-import { PADRAO_TARGETS, sideTotals } from '@/games/padrao/schema'
+import {
+  PADRAO_TARGETS,
+  isClosed,
+  isPointsMode,
+  isTargetLose,
+  scoreLeaders,
+  sideTotals,
+} from '@/games/padrao/schema'
 import { usePadraoStore } from '@/games/padrao/store'
 import { scoringSides } from '@/lib/teams'
 import { formatDuration, formatWhen, sessionDurationMs } from '@/lib/time'
@@ -37,6 +45,8 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
   const nextDealer = usePadraoStore((s) => s.nextDealer)
   const setDealer = usePadraoStore((s) => s.setDealer)
   const setTargetScore = usePadraoStore((s) => s.setTargetScore)
+  const setScoreMode = usePadraoStore((s) => s.setScoreMode)
+  const setTargetRule = usePadraoStore((s) => s.setTargetRule)
   const undoEvent = usePadraoStore((s) => s.undoEvent)
   const setSessionTitle = useSessionStore((s) => s.setSessionTitle)
   const [toolsOpen, setToolsOpen] = useState(false)
@@ -60,13 +70,21 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
   const finished = session.status === 'finished'
   const sides = scoringSides(session)
   const totals = sideTotals(state)
+  const pointsMode = isPointsMode(state)
+  const targetLose = isTargetLose(state)
+  const leaders = scoreLeaders(
+    state,
+    sides.map((side) => side.id),
+  )
   const dealer = session.players.find((p) => p.id === state.dealerPlayerId)
   const playerNames = session.players.map((p) => p.name)
   const displayTitle = sessionTitle(session, 'Padrão')
-  const scoreValues = sides.map((side) => totals[side.id] ?? 0)
-  const maxScore = Math.max(0, ...scoreValues)
-  const scoresTied = scoreValues.length > 1 && scoreValues.every((score) => score === maxScore)
   const recent = [...state.events].reverse()
+  const modeHint = !pointsMode
+    ? 'Rodadas ganhas'
+    : targetLose
+      ? 'Soma · quem fecha perde'
+      : 'Soma · quem fecha ganha'
 
   function openRound() {
     setScores({})
@@ -124,7 +142,7 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
           <p className="truncate text-xs text-muted-foreground">
             {finished
               ? 'Partida encerrada'
-              : `Até ${formatPoints(state.targetScore)} · ${dealer?.name ?? '—'} dá as cartas`}
+              : `${modeHint} · até ${formatPoints(state.targetScore)} · ${dealer?.name ?? '—'} dá as cartas`}
           </p>
         </div>
         {finished ? <Badge>Fim</Badge> : null}
@@ -147,8 +165,8 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
             .filter(Boolean)
             .join(' · ')
           const score = totals[side.id] ?? 0
-          const closed = score >= state.targetScore
-          const leading = !closed && maxScore > 0 && !scoresTied && score === maxScore
+          const closed = isClosed(score, state)
+          const leading = leaders.has(side.id)
           const dealing = side.playerIds.includes(state.dealerPlayerId)
           return (
             <Card
@@ -156,14 +174,19 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
               className={cn(
                 'bg-card/90',
                 leading && 'border-primary bg-primary/10 ring-2 ring-primary/30',
-                closed && 'border-primary bg-primary/10 ring-2 ring-primary/50',
+                closed &&
+                  (targetLose
+                    ? 'border-destructive/60 bg-destructive/5 ring-2 ring-destructive/25'
+                    : 'border-primary bg-primary/10 ring-2 ring-primary/50'),
               )}
             >
               <CardHeader className="pb-1">
                 <div className="flex items-start justify-between gap-1">
                   <div className="min-w-0">
                     <CardTitle className="flex items-center gap-1.5">
-                      {leading || closed ? <Trophy className="size-4 shrink-0 text-primary" /> : null}
+                      {leading || (closed && !targetLose) ? (
+                        <Trophy className="size-4 shrink-0 text-primary" />
+                      ) : null}
                       <span className="truncate">{side.name}</span>
                       {dealing ? <DealerMark /> : null}
                     </CardTitle>
@@ -171,49 +194,55 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
                       <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{members}</p>
                     ) : null}
                   </div>
-                  {closed ? <Badge>Fechou</Badge> : null}
+                  {closed ? (
+                    <Badge variant={targetLose ? 'destructive' : 'default'}>Fechou</Badge>
+                  ) : null}
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
                 <p className="text-center text-4xl font-bold tabular-nums leading-none sm:text-5xl">
                   {formatPoints(score)}
                 </p>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="lg"
-                    disabled={finished}
-                    aria-label={`Tirar 1 de ${side.name}`}
-                    onClick={() => applyDelta(sessionId, side.id, -1, 'Ajuste')}
-                  >
-                    <Minus />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="lg"
-                    disabled={finished}
-                    aria-label={`Somar 1 para ${side.name}`}
-                    onClick={() => applyDelta(sessionId, side.id, 1, 'Ajuste')}
-                  >
-                    <Plus />
-                  </Button>
-                </div>
+                {!pointsMode ? (
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      disabled={finished}
+                      aria-label={`Tirar 1 de ${side.name}`}
+                      onClick={() => applyDelta(sessionId, side.id, -1, 'Ajuste')}
+                    >
+                      <Minus />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="lg"
+                      disabled={finished}
+                      aria-label={`Somar 1 para ${side.name}`}
+                      onClick={() => applyDelta(sessionId, side.id, 1, 'Ajuste')}
+                    >
+                      <Plus />
+                    </Button>
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
           )
         })}
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className={cn('mt-3 grid gap-2', pointsMode && 'grid-cols-2')}>
         <Button type="button" variant="outline" onClick={() => setMesaOpen(true)}>
           <Settings2 />
           Mesa
         </Button>
-        <Button type="button" disabled={finished} onClick={openRound}>
-          <Plus />
-          Lançar pontos
-        </Button>
+        {pointsMode ? (
+          <Button type="button" disabled={finished} onClick={openRound}>
+            <Plus />
+            Lançar pontos
+          </Button>
+        ) : null}
       </div>
 
       <Card className="mt-3 bg-card/90">
@@ -222,7 +251,9 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
         </CardHeader>
         <CardContent>
           {recent.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum ponto ainda.</p>
+            <p className="text-sm text-muted-foreground">
+              {pointsMode ? 'Nenhum ponto ainda.' : 'Nenhuma rodada ainda. Use + / − no placar.'}
+            </p>
           ) : (
             <ol className="space-y-1.5">
               {recent.map((event) => {
@@ -266,7 +297,7 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>Mesa</DrawerTitle>
-            <DrawerDescription>Nome, alvo e quem dá as cartas.</DrawerDescription>
+            <DrawerDescription>Nome, regra, alvo e quem dá as cartas.</DrawerDescription>
           </DrawerHeader>
           <div className="min-h-0 space-y-4 overflow-y-auto px-4 pb-2">
             <div className="rounded-lg border bg-card/90 px-3 py-2 text-xs text-muted-foreground">
@@ -300,6 +331,42 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
                 Aparece na lista de partidas. Vazio volta a “Padrão”.
               </p>
             </div>
+
+            <div className="flex items-center justify-between gap-3 rounded-lg border bg-card/90 px-3 py-2">
+              <div>
+                <Label htmlFor="score-mode">Soma de pontos</Label>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {pointsMode
+                    ? 'Lança os pontos de cada rodada e soma no placar.'
+                    : 'Conta rodadas ganhas com +1 / −1 no placar.'}
+                </p>
+              </div>
+              <Switch
+                id="score-mode"
+                checked={pointsMode}
+                disabled={finished}
+                onCheckedChange={(checked) => setScoreMode(sessionId, checked ? 'points' : 'rounds')}
+              />
+            </div>
+
+            {pointsMode ? (
+              <div className="flex items-center justify-between gap-3 rounded-lg border bg-card/90 px-3 py-2">
+                <div>
+                  <Label htmlFor="target-rule">Quem fecha perde</Label>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {targetLose
+                      ? 'Menor pontuação lidera. Chegar ao alvo encerra com derrota.'
+                      : 'Maior pontuação lidera. Chegar ao alvo vence.'}
+                  </p>
+                </div>
+                <Switch
+                  id="target-rule"
+                  checked={targetLose}
+                  disabled={finished}
+                  onCheckedChange={(checked) => setTargetRule(sessionId, checked ? 'lose' : 'win')}
+                />
+              </div>
+            ) : null}
 
             <div>
               <Label htmlFor="dealer">Dá as cartas</Label>
@@ -363,7 +430,11 @@ export function PadraoScreen({ sessionId }: { sessionId: string }) {
                 }}
               />
               <p className="mt-1 text-[11px] text-muted-foreground">
-                Quem chegar a {formatPoints(state.targetScore)} fecha.
+                {targetLose
+                  ? `Quem chegar a ${formatPoints(state.targetScore)} perde e a partida fecha.`
+                  : !pointsMode
+                    ? `Quem ganhar ${formatPoints(state.targetScore)} rodadas fecha.`
+                    : `Quem chegar a ${formatPoints(state.targetScore)} fecha.`}
               </p>
             </div>
           </div>

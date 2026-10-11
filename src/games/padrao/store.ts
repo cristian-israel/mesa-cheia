@@ -4,10 +4,14 @@ import { createId } from '@/lib/ids'
 import { useSessionStore } from '@/stores/sessionStore'
 import type { Player, Team } from '@/schemas/session'
 import {
+  PADRAO_DEFAULT_ROUNDS_TARGET,
   PADRAO_DEFAULT_TARGET,
   PadraoStateSchema,
+  hasReachedTarget,
   sideTotals,
+  type PadraoScoreMode,
   type PadraoState,
+  type PadraoTargetRule,
 } from '@/games/padrao/schema'
 
 type PadraoStore = {
@@ -18,8 +22,14 @@ type PadraoStore = {
   previousDealer: (sessionId: string) => void
   setDealer: (sessionId: string, playerId: string) => void
   setTargetScore: (sessionId: string, targetScore: number) => void
+  setScoreMode: (sessionId: string, scoreMode: PadraoScoreMode) => void
+  setTargetRule: (sessionId: string, targetRule: PadraoTargetRule) => void
   undoEvent: (sessionId: string, eventId: string) => void
   deleteSession: (sessionId: string) => void
+}
+
+type PersistedPadrao = {
+  sessions: Record<string, Partial<PadraoState> & { sessionId?: string }>
 }
 
 function patchSession(
@@ -33,10 +43,20 @@ function patchSession(
 }
 
 function syncSessionStatus(state: PadraoState) {
-  const reached = Object.values(sideTotals(state)).some((score) => score >= state.targetScore)
   const session = useSessionStore.getState()
-  if (reached) session.finishSession(state.sessionId)
+  if (hasReachedTarget(state)) session.finishSession(state.sessionId)
   else session.reopenSession(state.sessionId)
+}
+
+function migratePadraoState(raw: Record<string, unknown>): PadraoState {
+  return PadraoStateSchema.parse({
+    sessionId: raw.sessionId,
+    targetScore: raw.targetScore ?? PADRAO_DEFAULT_TARGET,
+    dealerPlayerId: raw.dealerPlayerId ?? '',
+    scoreMode: raw.scoreMode === 'points' ? 'points' : 'rounds',
+    targetRule: raw.targetRule === 'lose' ? 'lose' : 'win',
+    events: raw.events ?? [],
+  })
 }
 
 export const usePadraoStore = create<PadraoStore>()(
@@ -46,8 +66,10 @@ export const usePadraoStore = create<PadraoStore>()(
       createSession: (sessionId, players, _teams) => {
         const state: PadraoState = {
           sessionId,
-          targetScore: PADRAO_DEFAULT_TARGET,
+          targetScore: PADRAO_DEFAULT_ROUNDS_TARGET,
           dealerPlayerId: players[0]?.id ?? '',
+          scoreMode: 'rounds',
+          targetRule: 'win',
           events: [],
         }
         const parsed = PadraoStateSchema.parse(state)
@@ -100,6 +122,24 @@ export const usePadraoStore = create<PadraoStore>()(
         set({ sessions: { ...get().sessions, [sessionId]: next } })
         syncSessionStatus(next)
       },
+      setScoreMode: (sessionId, scoreMode) => {
+        const current = get().sessions[sessionId]
+        if (!current || current.scoreMode === scoreMode) return
+        const next: PadraoState = {
+          ...current,
+          scoreMode,
+          targetRule: scoreMode === 'rounds' ? 'win' : current.targetRule,
+        }
+        set({ sessions: { ...get().sessions, [sessionId]: next } })
+        syncSessionStatus(next)
+      },
+      setTargetRule: (sessionId, targetRule) => {
+        const current = get().sessions[sessionId]
+        if (!current || current.scoreMode !== 'points' || current.targetRule === targetRule) return
+        const next = { ...current, targetRule }
+        set({ sessions: { ...get().sessions, [sessionId]: next } })
+        syncSessionStatus(next)
+      },
       undoEvent: (sessionId, eventId) => {
         const current = get().sessions[sessionId]
         if (!current) return
@@ -124,6 +164,22 @@ export const usePadraoStore = create<PadraoStore>()(
         set({ sessions: next })
       },
     }),
-    { name: 'pontos-padrao', version: 1 },
+    {
+      name: 'pontos-padrao',
+      version: 2,
+      migrate: (persisted) => {
+        const data = (persisted ?? { sessions: {} }) as PersistedPadrao
+        const sessions: Record<string, PadraoState> = {}
+        for (const [id, raw] of Object.entries(data.sessions ?? {})) {
+          // Partidas antigas tinham +/- e lançar pontos com alvo = vitória.
+          sessions[id] = migratePadraoState({
+            ...raw,
+            scoreMode: raw.scoreMode ?? 'points',
+            targetRule: raw.targetRule ?? 'win',
+          })
+        }
+        return { sessions }
+      },
+    },
   ),
 )
