@@ -21,7 +21,9 @@ type PokerStore = {
   toggleZeroed: (sessionId: string, playerId: string) => void
   declareWinner: (sessionId: string, playerId: string) => void
   clearWinner: (sessionId: string) => void
+  previousDealer: (sessionId: string) => void
   undoLastHand: (sessionId: string) => void
+  undoHand: (sessionId: string, handId: string) => void
   deleteSession: (sessionId: string) => void
 }
 
@@ -108,8 +110,20 @@ export const usePokerStore = create<PokerStore>()(
           current,
         )
         if (ids.length === 0) return
-        const idx = ids.indexOf(current.dealerPlayerId)
+        const idx = Math.max(0, ids.indexOf(current.dealerPlayerId))
         get().setDealer(sessionId, ids[(idx + 1) % ids.length])
+      },
+      previousDealer: (sessionId) => {
+        const current = get().sessions[sessionId]
+        const session = useSessionStore.getState().sessions[sessionId]
+        if (!current || !session) return
+        const ids = activePlayerIds(
+          session.players.map((p) => p.id),
+          current,
+        )
+        if (ids.length === 0) return
+        const idx = Math.max(0, ids.indexOf(current.dealerPlayerId))
+        get().setDealer(sessionId, ids[(idx - 1 + ids.length) % ids.length])
       },
       setDealer: (sessionId, playerId) => {
         set((state) => ({
@@ -185,9 +199,22 @@ export const usePokerStore = create<PokerStore>()(
       },
       undoLastHand: (sessionId) => {
         const current = get().sessions[sessionId]
-        if (!current || current.hands.length === 0) return
-        const next = { ...current, hands: current.hands.slice(0, -1) }
+        const last = current?.hands.at(-1)
+        if (!last) return
+        get().undoHand(sessionId, last.id)
+      },
+      undoHand: (sessionId, handId) => {
+        const current = get().sessions[sessionId]
+        if (!current) return
+        const index = current.hands.findIndex((hand) => hand.id === handId)
+        if (index < 0) return
+        const wasLast = index === current.hands.length - 1
+        const next = {
+          ...current,
+          hands: current.hands.filter((hand) => hand.id !== handId),
+        }
         set({ sessions: { ...get().sessions, [sessionId]: next } })
+        if (wasLast) get().previousDealer(sessionId)
       },
       deleteSession: (sessionId) => {
         const next = { ...get().sessions }

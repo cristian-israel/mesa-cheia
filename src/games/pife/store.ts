@@ -15,6 +15,7 @@ type PifeStore = {
   createSession: (sessionId: string, players: Player[], teams?: Team[]) => PifeState
   registerPife: (sessionId: string, winnerPlayerId: string) => void
   nextDealer: (sessionId: string) => void
+  previousDealer: (sessionId: string) => void
   setDealer: (sessionId: string, playerId: string) => void
   setTargetScore: (sessionId: string, targetScore: number) => void
   undoLast: (sessionId: string) => void
@@ -75,6 +76,15 @@ export const usePifeStore = create<PifeStore>()(
         const idx = Math.max(0, ids.indexOf(current.dealerPlayerId))
         get().setDealer(sessionId, ids[(idx + 1) % ids.length])
       },
+      previousDealer: (sessionId) => {
+        const current = get().sessions[sessionId]
+        const session = useSessionStore.getState().sessions[sessionId]
+        if (!current || !session) return
+        const ids = session.players.map((p) => p.id)
+        if (ids.length === 0) return
+        const idx = Math.max(0, ids.indexOf(current.dealerPlayerId))
+        get().setDealer(sessionId, ids[(idx - 1 + ids.length) % ids.length])
+      },
       setDealer: (sessionId, playerId) => {
         set((state) => ({
           sessions: patchSession(state.sessions, sessionId, { dealerPlayerId: playerId }),
@@ -96,9 +106,15 @@ export const usePifeStore = create<PifeStore>()(
       undoRound: (sessionId, roundId) => {
         const current = get().sessions[sessionId]
         if (!current) return
-        const next = { ...current, rounds: current.rounds.filter((round) => round.id !== roundId) }
-        if (next.rounds.length === current.rounds.length) return
+        const index = current.rounds.findIndex((round) => round.id === roundId)
+        if (index < 0) return
+        const wasLast = index === current.rounds.length - 1
+        const next = {
+          ...current,
+          rounds: current.rounds.filter((round) => round.id !== roundId),
+        }
         set({ sessions: { ...get().sessions, [sessionId]: next } })
+        if (wasLast) get().previousDealer(sessionId)
         syncSessionStatus(next)
       },
       deleteSession: (sessionId) => {

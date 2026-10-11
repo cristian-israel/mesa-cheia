@@ -15,6 +15,7 @@ type PadraoStore = {
   createSession: (sessionId: string, players: Player[], teams?: Team[]) => PadraoState
   applyDelta: (sessionId: string, sideId: string, delta: number, label: string) => void
   nextDealer: (sessionId: string) => void
+  previousDealer: (sessionId: string) => void
   setDealer: (sessionId: string, playerId: string) => void
   setTargetScore: (sessionId: string, targetScore: number) => void
   undoEvent: (sessionId: string, eventId: string) => void
@@ -78,6 +79,15 @@ export const usePadraoStore = create<PadraoStore>()(
         const idx = Math.max(0, ids.indexOf(current.dealerPlayerId))
         get().setDealer(sessionId, ids[(idx + 1) % ids.length])
       },
+      previousDealer: (sessionId) => {
+        const current = get().sessions[sessionId]
+        const session = useSessionStore.getState().sessions[sessionId]
+        if (!current || !session) return
+        const ids = session.players.map((p) => p.id)
+        if (ids.length === 0) return
+        const idx = Math.max(0, ids.indexOf(current.dealerPlayerId))
+        get().setDealer(sessionId, ids[(idx - 1 + ids.length) % ids.length])
+      },
       setDealer: (sessionId, playerId) => {
         set((state) => ({
           sessions: patchSession(state.sessions, sessionId, { dealerPlayerId: playerId }),
@@ -93,9 +103,19 @@ export const usePadraoStore = create<PadraoStore>()(
       undoEvent: (sessionId, eventId) => {
         const current = get().sessions[sessionId]
         if (!current) return
-        const next = { ...current, events: current.events.filter((event) => event.id !== eventId) }
-        if (next.events.length === current.events.length) return
+        const index = current.events.findIndex((event) => event.id === eventId)
+        if (index < 0) return
+        const removed = current.events[index]
+        const wasLast = index === current.events.length - 1
+        const next = {
+          ...current,
+          events: current.events.filter((event) => event.id !== eventId),
+        }
         set({ sessions: { ...get().sessions, [sessionId]: next } })
+        // Lançar pontos avança o dealer uma vez por lote de "Rodada".
+        if (wasLast && removed.label === 'Rodada' && next.events.at(-1)?.label !== 'Rodada') {
+          get().previousDealer(sessionId)
+        }
         syncSessionStatus(next)
       },
       deleteSession: (sessionId) => {

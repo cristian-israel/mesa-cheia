@@ -24,7 +24,9 @@ type CanastraStore = {
   setTargetScore: (sessionId: string, targetScore: number) => void
   setBuracoEnabled: (sessionId: string, enabled: boolean) => void
   setBuracoScore: (sessionId: string, buracoScore: number) => void
+  previousDealer: (sessionId: string) => void
   undoLastRound: (sessionId: string) => void
+  undoRound: (sessionId: string, roundId: string) => void
   deleteSession: (sessionId: string) => void
 }
 
@@ -87,6 +89,15 @@ export const useCanastraStore = create<CanastraStore>()(
         const idx = Math.max(0, ids.indexOf(current.dealerPlayerId))
         get().setDealer(sessionId, ids[(idx + 1) % ids.length])
       },
+      previousDealer: (sessionId) => {
+        const current = get().sessions[sessionId]
+        const session = useSessionStore.getState().sessions[sessionId]
+        if (!current || !session) return
+        const ids = session.players.map((p) => p.id)
+        if (ids.length === 0) return
+        const idx = Math.max(0, ids.indexOf(current.dealerPlayerId))
+        get().setDealer(sessionId, ids[(idx - 1 + ids.length) % ids.length])
+      },
       setDealer: (sessionId, playerId) => {
         set((state) => ({
           sessions: patchSession(state.sessions, sessionId, { dealerPlayerId: playerId }),
@@ -116,11 +127,22 @@ export const useCanastraStore = create<CanastraStore>()(
       },
       undoLastRound: (sessionId) => {
         const current = get().sessions[sessionId]
-        if (!current || current.rounds.length === 0) return
-        const next = { ...current, rounds: current.rounds.slice(0, -1) }
-        set({
-          sessions: { ...get().sessions, [sessionId]: next },
-        })
+        const last = current?.rounds.at(-1)
+        if (!last) return
+        get().undoRound(sessionId, last.id)
+      },
+      undoRound: (sessionId, roundId) => {
+        const current = get().sessions[sessionId]
+        if (!current) return
+        const index = current.rounds.findIndex((round) => round.id === roundId)
+        if (index < 0) return
+        const wasLast = index === current.rounds.length - 1
+        const next = {
+          ...current,
+          rounds: current.rounds.filter((round) => round.id !== roundId),
+        }
+        set({ sessions: { ...get().sessions, [sessionId]: next } })
+        if (wasLast) get().previousDealer(sessionId)
         const totals = teamTotals(next)
         const reached = Object.values(totals).some((score) => score >= next.targetScore)
         if (!reached) {
