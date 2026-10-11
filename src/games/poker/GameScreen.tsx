@@ -49,7 +49,7 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
   const toggleZeroed = usePokerStore((s) => s.toggleZeroed)
   const declareWinner = usePokerStore((s) => s.declareWinner)
   const clearWinner = usePokerStore((s) => s.clearWinner)
-  const undoLastHand = usePokerStore((s) => s.undoLastHand)
+  const undoHand = usePokerStore((s) => s.undoHand)
   const [toolsOpen, setToolsOpen] = useState(false)
   const [mesaOpen, setMesaOpen] = useState(false)
   const [handOpen, setHandOpen] = useState(false)
@@ -269,7 +269,6 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
               {[...state.hands].reverse().map((hand, reverseIndex) => {
                 const index = state.hands.length - reverseIndex
                 const winner = session.players.find((p) => p.id === hand.winnerPlayerId)
-                const isLast = reverseIndex === 0
                 return (
                   <li
                     key={hand.id}
@@ -280,18 +279,16 @@ export function PokerScreen({ sessionId }: { sessionId: string }) {
                       <Trophy className="size-3 text-primary" />
                       {winner?.name ?? '—'}
                     </span>
-                    {isLast && !finished ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 shrink-0"
-                        aria-label="Desfazer última mão"
-                        onClick={() => undoLastHand(sessionId)}
-                      >
-                        <RotateCcw />
-                      </Button>
-                    ) : null}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 shrink-0"
+                      aria-label={`Desfazer mão ${index}`}
+                      onClick={() => undoHand(sessionId, hand.id)}
+                    >
+                      <RotateCcw />
+                    </Button>
                   </li>
                 )
               })}

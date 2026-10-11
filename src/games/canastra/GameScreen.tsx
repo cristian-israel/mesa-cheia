@@ -47,6 +47,7 @@ export function CanastraScreen({ sessionId }: { sessionId: string }) {
   const setBuracoEnabled = useCanastraStore((s) => s.setBuracoEnabled)
   const setBuracoScore = useCanastraStore((s) => s.setBuracoScore)
   const undoLastRound = useCanastraStore((s) => s.undoLastRound)
+  const undoRound = useCanastraStore((s) => s.undoRound)
   const [toolsOpen, setToolsOpen] = useState(false)
   const [mesaOpen, setMesaOpen] = useState(false)
   const [roundOpen, setRoundOpen] = useState(false)
@@ -198,14 +199,27 @@ export function CanastraScreen({ sessionId }: { sessionId: string }) {
             <p className="text-sm text-muted-foreground">Nenhuma rodada ainda.</p>
           ) : (
             <ol className="space-y-2">
-              {state.rounds.map((round, index) => {
+              {[...state.rounds].reverse().map((round, reverseIndex) => {
+                const number = state.rounds.length - reverseIndex
                 const leaders = roundLeaders(
                   round.teamScores,
                   sides.map((side) => side.id),
                 )
                 return (
                   <li key={round.id} className="rounded-lg border bg-background/50 px-3 py-2 text-xs">
-                    <p className="font-medium">Rodada {index + 1}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="min-w-0 flex-1 font-medium">Rodada {number}</p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 shrink-0"
+                        aria-label={`Desfazer rodada ${number}`}
+                        onClick={() => undoRound(sessionId, round.id)}
+                      >
+                        <RotateCcw />
+                      </Button>
+                    </div>
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
                       {sides.map((team) => {
                         const points = round.teamScores[team.id] ?? 0
