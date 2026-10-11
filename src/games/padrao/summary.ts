@@ -1,7 +1,7 @@
 import type { SessionSummary } from '@/lib/game-registry'
 import { groupSizeLabel, scoringSides } from '@/lib/teams'
 import type { Session } from '@/schemas/session'
-import { sideTotals } from '@/games/padrao/schema'
+import { scoreLeaders, sideTotals } from '@/games/padrao/schema'
 import { usePadraoStore } from '@/games/padrao/store'
 
 export function summarizePadrao(session: Session): SessionSummary {
@@ -9,10 +9,12 @@ export function summarizePadrao(session: Session): SessionSummary {
   const sides = scoringSides(session)
   const state = usePadraoStore.getState().sessions[session.id]
   const totals = state ? sideTotals(state) : {}
-  const scores = sides.map((side) => totals[side.id] ?? 0)
-  const max = Math.max(0, ...scores)
-  const allTied = scores.length > 1 && scores.every((score) => score === max)
-  const hasLeader = max > 0 && !allTied
+  const leaders = state
+    ? scoreLeaders(
+        state,
+        sides.map((side) => side.id),
+      )
+    : new Set<string>()
   const teamSize = session.teams?.[0]?.playerIds.length ?? 1
 
   return {
@@ -25,7 +27,7 @@ export function summarizePadrao(session: Session): SessionSummary {
         .map((id) => session.players.find((player) => player.id === id)?.name ?? '')
         .filter(Boolean),
       score: totals[side.id],
-      leader: hasLeader && (totals[side.id] ?? 0) === max,
+      leader: leaders.has(side.id),
     })),
   }
 }
